@@ -19,6 +19,7 @@ const FilterInput = z.object({
 export type EventRow = {
   id: string;
   camera_id: string;
+  camera_name: string | null;
   captured_at: string;
   image_path: string;
   plate_text: string | null;
@@ -31,6 +32,7 @@ export type EventRow = {
   summary: string | null;
   imageUrl: string | null;
 };
+
 
 export const listEvents = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
