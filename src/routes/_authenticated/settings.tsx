@@ -163,8 +163,9 @@ function SettingsPage() {
               >
                 <span>{key.name}</span>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span>{key.revoked_at ? "revoked" : "active"}</span>
-                  {!key.revoked_at ? (
+                  <span>{key.revoked ? "revoked" : "active"}</span>
+                  {!key.revoked ? (
+
                     <Button variant="ghost" size="icon" onClick={() => revoke.mutate(key.id)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
