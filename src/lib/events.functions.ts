@@ -40,7 +40,8 @@ export const listEvents = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<EventRow[]> => {
     let query = context.supabase
       .from("events")
-      .select("*")
+      .select("*, cameras(name)")
+
       .order("captured_at", { ascending: false })
       .limit(data.limit ?? 60);
 
