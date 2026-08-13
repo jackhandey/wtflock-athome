@@ -33,7 +33,7 @@ export const createDeviceKey = createServerFn({ method: "POST" })
     const { error } = await context.supabase.from("device_keys").insert({
       user_id: context.userId,
       name: data.name,
-      key_hash: hashKey(secret),
+      key_hash: await hashKey(secret),
       key_prefix: secret.slice(0, 10),
     });
     if (error) throw new Error(error.message);
