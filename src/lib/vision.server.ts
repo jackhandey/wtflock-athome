@@ -4,31 +4,64 @@ export type Detection = {
   interesting: boolean;
   plateText: string | null;
   plateConfidence: number | null;
+  plateState: string | null;
+  plateType: string | null;
   vehicleColor: string | null;
   vehicleType: string | null;
   vehicleMake: string | null;
+  vehicleModel: string | null;
+  vehicleGeneration: string | null;
+  uniqueFeatures: string[];
   vehicleCount: number;
   personCount: number;
   summary: string;
 };
 
-const SYSTEM_PROMPT = `You analyze a single still frame from a fixed home security camera.
-Report only what is clearly visible. Never guess a license plate you cannot read.
-Respond with JSON only, matching exactly this shape:
-{"vehicles":[{"plate":string|null,"plate_confidence":number,"color":string|null,"type":string|null,"make":string|null}],"person_count":number,"summary":string}
+const SYSTEM_PROMPT = `You are a high-accuracy security camera vehicle intelligence & ALPR system.
+Analyze this camera image and report vehicle details and license plate information with high precision.
+
+Respond ONLY with a JSON object matching this exact shape:
+{
+  "vehicles": [
+    {
+      "plate": string | null,
+      "plate_confidence": number,
+      "plate_state": string | null,
+      "plate_type": "Standard" | "Temporary Paper Tag" | "Commercial" | "Dealer" | "Disabled" | "Other" | null,
+      "color": string | null,
+      "type": "sedan" | "suv" | "truck" | "van" | "pickup" | "motorcycle" | "hatchback" | "coupe" | "other" | null,
+      "make": string | null,
+      "model": string | null,
+      "generation": string | null,
+      "unique_features": string[]
+    }
+  ],
+  "person_count": number,
+  "summary": string
+}
+
 Rules:
-- plate: the characters you can read, uppercase, no spaces. null when unreadable or no plate visible.
-- plate_confidence: 0 to 1, how sure you are of every character. Use 0 when plate is null.
-- type: one of sedan, suv, truck, van, pickup, motorcycle, bus, other.
-- summary: one short sentence describing the scene (max 15 words).
-- Empty vehicles array and person_count 0 when the frame shows nothing but the static scene.`;
+- plate: Uppercase alphanumeric string of readable plate text (no spaces). Use null if unreadable.
+- plate_confidence: float between 0.0 and 1.0. Use 0 if plate is null.
+- plate_state: 2-letter state abbreviation if visible (e.g. CA, TX, NY, FL). Null if unreadable.
+- plate_type: Standard, Temporary Paper Tag, Commercial, Dealer, Disabled, or Other.
+- make: Manufacturer name (e.g., Honda, Ford, Toyota, Tesla, Chevrolet).
+- model: Specific model name if recognizable (e.g., Civic, F-150, Camry, Model Y, Silverado).
+- generation: Estimated year/generation range (e.g. "2016-2021").
+- unique_features: Array of distinct visible identifiers, e.g. ["roof_rack", "bumper_sticker", "dented_bumper", "window_tint", "custom_wheels", "tow_hitch", "tool_rack"]. Use empty array [] if none.
+- summary: Concise 1-sentence description (max 20 words).`;
 
 type GatewayVehicle = {
   plate?: string | null;
   plate_confidence?: number | null;
+  plate_state?: string | null;
+  plate_type?: string | null;
   color?: string | null;
   type?: string | null;
   make?: string | null;
+  model?: string | null;
+  generation?: string | null;
+  unique_features?: string[];
 };
 
 type GatewayResult = {
@@ -41,9 +74,14 @@ const EMPTY: Detection = {
   interesting: false,
   plateText: null,
   plateConfidence: null,
+  plateState: null,
+  plateType: null,
   vehicleColor: null,
   vehicleType: null,
   vehicleMake: null,
+  vehicleModel: null,
+  vehicleGeneration: null,
+  uniqueFeatures: [],
   vehicleCount: 0,
   personCount: 0,
   summary: "Nothing detected",
@@ -117,9 +155,14 @@ export async function detectFromImage(imageDataUrl: string): Promise<Detection> 
     interesting: vehicles.length > 0 || personCount > 0,
     plateText: plateText && plateText.length >= 3 ? plateText : null,
     plateConfidence: best?.plate_confidence != null ? Number(best.plate_confidence) : null,
+    plateState: best?.plate_state ? String(best.plate_state).toUpperCase().slice(0, 5) : null,
+    plateType: best?.plate_type ?? null,
     vehicleColor: best?.color ?? null,
     vehicleType: best?.type ?? null,
     vehicleMake: best?.make ?? null,
+    vehicleModel: best?.model ?? null,
+    vehicleGeneration: best?.generation ?? null,
+    uniqueFeatures: Array.isArray(best?.unique_features) ? best.unique_features.map(String) : [],
     vehicleCount: vehicles.length,
     personCount,
     summary: parsed.summary ? String(parsed.summary).slice(0, 200) : EMPTY.summary,

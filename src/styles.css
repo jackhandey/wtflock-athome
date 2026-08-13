@@ -136,3 +136,37 @@
     linear-gradient(90deg, oklch(1 0 0 / 3%) 1px, transparent 1px);
   background-size: 28px 28px;
 }
+
+@media print {
+  header, nav, button, .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    background-image: none !important;
+  }
+
+  .card, div[class*="Card"] {
+    border: 1px solid #cccccc !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+  }
+
+  h1, h2, h3, p, span, label, td, th {
+    color: #000000 !important;
+  }
+
+  .plate {
+    background: #e2e8f0 !important;
+    color: #000000 !important;
+    border: 1px solid #94a3b8 !important;
+  }
+
+  img {
+    max-height: 240px !important;
+    page-break-inside: avoid;
+  }
+}

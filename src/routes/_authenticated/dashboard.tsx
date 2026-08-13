@@ -12,6 +12,7 @@ import { listAlerts } from "@/lib/alerts.functions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -80,8 +81,19 @@ function Dashboard() {
         queryClient.invalidateQueries({ queryKey: ["latest-frames"] });
         queryClient.invalidateQueries({ queryKey: ["event-stats"] });
       })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "alerts" }, () => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "alerts" }, (payload) => {
         queryClient.invalidateQueries({ queryKey: ["alerts"] });
+
+        // Trigger in-browser audio alarm siren
+        import("@/lib/audio-alarm").then(({ playAlertSirenSound }) => {
+          playAlertSirenSound();
+        });
+
+        // Trigger toast notification
+        const newPlate = (payload.new as any)?.plate || "HOTLIST VEHICLE";
+        toast.error(`🚨 HOTLIST ALERT: License plate ${newPlate} detected!`, {
+          duration: 10000,
+        });
       })
       .subscribe();
     return () => {

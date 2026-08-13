@@ -104,9 +104,14 @@ export const Route = createFileRoute("/api/public/ingest")({
             plate_text: detection.plateText,
             plate_normalized: plateNormalized || null,
             plate_confidence: detection.plateConfidence,
+            plate_state: detection.plateState,
+            plate_type: detection.plateType,
             vehicle_color: detection.vehicleColor,
             vehicle_type: detection.vehicleType,
             vehicle_make: detection.vehicleMake,
+            vehicle_model: detection.vehicleModel,
+            vehicle_generation: detection.vehicleGeneration,
+            unique_features: detection.uniqueFeatures,
             vehicle_count: detection.vehicleCount,
             person_count: detection.personCount,
             summary: detection.summary,
@@ -131,14 +136,60 @@ export const Route = createFileRoute("/api/public/ingest")({
           );
 
           if (hit) {
-            await supabaseAdmin.from("alerts").insert({
-              user_id: userId,
-              event_id: event.id,
-              watchlist_id: hit.id,
-              plate: detection.plateText ?? hit.plate,
-              reason: hit.reason,
-            });
+            const { data: newAlert } = await supabaseAdmin
+              .from("alerts")
+              .insert({
+                user_id: userId,
+                event_id: event.id,
+                watchlist_id: hit.id,
+                plate: detection.plateText ?? hit.plate,
+                reason: hit.reason,
+              })
+              .select("id")
+              .single();
+
             alerted = true;
+
+            // Trigger instant multi-channel webhook dispatch if configured
+            const { data: settings } = await supabaseAdmin
+              .from("user_settings")
+              .select("webhook_url, webhook_enabled")
+              .eq("user_id", userId)
+              .maybeSingle();
+
+            if (settings?.webhook_url && settings?.webhook_enabled !== false && newAlert) {
+              const { sendAlertWebhook } = await import("@/lib/webhooks.server");
+
+              // Generate signed image URL if snapshot stored
+              let imageUrl: string | null = null;
+              if (imagePath) {
+                const { data: signed } = await supabaseAdmin.storage
+                  .from("snapshots")
+                  .createSignedUrl(imagePath, 86400);
+                imageUrl = signed?.signedUrl ?? null;
+              }
+
+              const vehicleDesc = [
+                detection.vehicleColor,
+                detection.vehicleMake,
+                detection.vehicleModel,
+                detection.vehicleType,
+              ]
+                .filter(Boolean)
+                .join(" ");
+
+              sendAlertWebhook(settings.webhook_url, {
+                alertId: newAlert.id,
+                plate: detection.plateText ?? hit.plate,
+                plateState: detection.plateState,
+                reason: hit.reason,
+                cameraName: camera.name ?? "Home Camera",
+                capturedAt: capturedAt,
+                summary: detection.summary,
+                vehicleDetails: vehicleDesc,
+                imageUrl,
+              }).catch((e) => console.error("Async webhook failed:", e));
+            }
           }
         }
 

@@ -49,6 +49,9 @@ function Cameras() {
   const [sourceType, setSourceType] = useState<"snapshot" | "rtsp">("snapshot");
   const [url, setUrl] = useState("");
   const [interval, setInterval] = useState(20);
+  const [latitude, setLatitude] = useState<string>("");
+  const [longitude, setLongitude] = useState<string>("");
+  const [facingDirection, setFacingDirection] = useState<string>("Ingress");
 
   const cameras = useQuery({ queryKey: ["cameras"], queryFn: () => fetchCameras({}) });
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["cameras"] });
@@ -63,12 +66,18 @@ function Cameras() {
           url,
           pollIntervalSeconds: interval,
           enabled: true,
+          latitude: latitude ? parseFloat(latitude) : null,
+          longitude: longitude ? parseFloat(longitude) : null,
+          facingDirection: facingDirection || "Ingress",
         },
       }),
     onSuccess: () => {
       setName("");
       setLocation("");
       setUrl("");
+      setLatitude("");
+      setLongitude("");
+      setFacingDirection("Ingress");
       invalidate();
       toast.success("Camera added — re-download the bridge script from Settings");
     },
@@ -80,6 +89,15 @@ function Cameras() {
     onSuccess: invalidate,
   });
 
+  const updateCoords = useMutation({
+    mutationFn: (vars: { id: string; latitude: number | null; longitude: number | null; facingDirection: string }) =>
+      update({ data: { id: vars.id, latitude: vars.latitude, longitude: vars.longitude, facingDirection: vars.facingDirection } }),
+    onSuccess: () => {
+      invalidate();
+      toast.success("Camera location updated");
+    },
+  });
+
   const destroy = useMutation({
     mutationFn: (id: string) => remove({ data: { id } }),
     onSuccess: () => {
@@ -88,30 +106,78 @@ function Cameras() {
     },
   });
 
+  const [showUrlGuide, setShowUrlGuide] = useState(false);
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Cameras</h1>
-        <p className="text-sm text-muted-foreground">
-          URLs stay on your network — only the bridge agent reads them.
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Cameras & GIS Coordinates</h1>
+          <p className="text-sm text-muted-foreground">
+            Register camera streams and configure map coordinates & directional vectors for journey tracking.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setShowUrlGuide((prev) => !prev)}>
+          {showUrlGuide ? "Hide URL Examples" : "Camera URL Cheat Sheet"}
+        </Button>
       </div>
+
+      {/* Expandable Camera Brand URL Guide */}
+      {showUrlGuide ? (
+        <Card className="bg-primary/5 border border-primary/30">
+          <CardHeader className="py-3 px-4 border-b border-primary/20">
+            <CardTitle className="text-xs font-bold uppercase tracking-wider text-primary">
+              Common Camera Brand URL Patterns (RTSP & Snapshot)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-3 space-y-2 text-xs font-mono">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="p-2 rounded bg-background/80 border border-border/50">
+                <span className="font-bold text-foreground block">Reolink</span>
+                <span className="text-muted-foreground text-[11px] block">RTSP: `rtsp://admin:pass@192.168.1.50:554/h264Preview_01_main`</span>
+                <span className="text-muted-foreground text-[11px] block">HTTP: `http://192.168.1.50/cgi-bin/api.cgi?cmd=Snap&user=admin&password=pass`</span>
+              </div>
+
+              <div className="p-2 rounded bg-background/80 border border-border/50">
+                <span className="font-bold text-foreground block">Amcrest / Dahua</span>
+                <span className="text-muted-foreground text-[11px] block">RTSP: `rtsp://admin:pass@192.168.1.50:554/cam/realmonitor?channel=1&subtype=0`</span>
+                <span className="text-muted-foreground text-[11px] block">HTTP: `http://192.168.1.50/cgi-bin/snapshot.cgi?loginuse=admin&loginpas=pass`</span>
+              </div>
+
+              <div className="p-2 rounded bg-background/80 border border-border/50">
+                <span className="font-bold text-foreground block">Hikvision</span>
+                <span className="text-muted-foreground text-[11px] block">RTSP: `rtsp://admin:pass@192.168.1.50:554/Streaming/Channels/101`</span>
+                <span className="text-muted-foreground text-[11px] block">HTTP: `http://192.168.1.50/ISAPI/Streaming/channels/101/picture`</span>
+              </div>
+
+              <div className="p-2 rounded bg-background/80 border border-border/50">
+                <span className="font-bold text-foreground block">Wyze / Tapo / ESP32-CAM</span>
+                <span className="text-muted-foreground text-[11px] block">Wyze (Docker/Bridge): `rtsp://192.168.1.50:8554/front-porch`</span>
+                <span className="text-muted-foreground text-[11px] block">ESP32-CAM HTTP: `http://192.168.1.50/capture`</span>
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground pt-1">
+              * Replace `192.168.1.50`, `admin`, and `pass` with your camera's actual local IP address, username, and password.
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card className="bg-card/70">
         <CardHeader>
           <CardTitle className="text-base">Add a camera</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-5">
-          <div className="space-y-2">
+        <CardContent className="grid gap-4 md:grid-cols-6">
+          <div className="space-y-2 md:col-span-2">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" value={name} onChange={(event) => setName(event.target.value)} />
+            <Input id="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Front Gate East" />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="location">Location description</Label>
             <Input
               id="location"
               value={location}
-              placeholder="Driveway"
+              placeholder="e.g. Main Driveway Entrance"
               onChange={(event) => setLocation(event.target.value)}
             />
           </div>
@@ -130,17 +196,8 @@ function Cameras() {
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="url">URL</Label>
-            <Input
-              id="url"
-              value={url}
-              placeholder="rtsp://user:pass@192.168.1.20/stream1"
-              onChange={(event) => setUrl(event.target.value)}
-            />
-          </div>
           <div className="space-y-2">
-            <Label htmlFor="interval">Sample every (seconds)</Label>
+            <Label htmlFor="interval">Interval (s)</Label>
             <Input
               id="interval"
               type="number"
@@ -150,10 +207,57 @@ function Cameras() {
               onChange={(event) => setInterval(Number(event.target.value))}
             />
           </div>
-          <div className="flex items-end md:col-span-4">
+          <div className="space-y-2 md:col-span-3">
+            <Label htmlFor="url">Stream / Snapshot URL</Label>
+            <Input
+              id="url"
+              value={url}
+              placeholder="rtsp://user:pass@192.168.1.20/stream1"
+              onChange={(event) => setUrl(event.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="latitude">Latitude</Label>
+            <Input
+              id="latitude"
+              type="number"
+              step="any"
+              placeholder="37.7749"
+              value={latitude}
+              onChange={(e) => setLatitude(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="longitude">Longitude</Label>
+            <Input
+              id="longitude"
+              type="number"
+              step="any"
+              placeholder="-122.4194"
+              value={longitude}
+              onChange={(e) => setLongitude(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Direction Vector</Label>
+            <Select value={facingDirection} onValueChange={setFacingDirection}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Ingress">Ingress (Entering)</SelectItem>
+                <SelectItem value="Egress">Egress (Exiting)</SelectItem>
+                <SelectItem value="Northbound">Northbound</SelectItem>
+                <SelectItem value="Southbound">Southbound</SelectItem>
+                <SelectItem value="Eastbound">Eastbound</SelectItem>
+                <SelectItem value="Westbound">Westbound</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-end md:col-span-6 pt-2">
             <Button onClick={() => add.mutate()} disabled={!name || !url || add.isPending}>
               <Plus className="mr-1.5 h-4 w-4" />
-              Add camera
+              Add camera with Map Location
             </Button>
           </div>
         </CardContent>
@@ -163,13 +267,27 @@ function Cameras() {
         {(cameras.data ?? []).map((camera) => (
           <Card key={camera.id} className="bg-card/70">
             <CardContent className="flex flex-wrap items-center gap-4 pt-6">
-              <div className="flex-1">
-                <p className="font-medium">{camera.name}</p>
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-medium">{camera.name}</p>
+                  <span className="rounded bg-secondary px-2 py-0.5 text-xs font-mono">
+                    {camera.facing_direction || "Ingress"}
+                  </span>
+                  {camera.latitude && camera.longitude ? (
+                    <span className="rounded bg-primary/10 text-primary px-2 py-0.5 text-xs font-mono">
+                      📍 {camera.latitude.toFixed(5)}, {camera.longitude.toFixed(5)}
+                    </span>
+                  ) : (
+                    <span className="rounded bg-destructive/10 text-destructive px-2 py-0.5 text-xs">
+                      No coordinates set (will default on map)
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   {camera.source_type.toUpperCase()} · every {camera.poll_interval_seconds}s ·{" "}
-                  {camera.location || "no location"}
+                  {camera.location || "no location description"}
                 </p>
-                <p className="mt-1 break-all text-xs text-muted-foreground">{camera.url}</p>
+                <p className="break-all text-xs text-muted-foreground">{camera.url}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Label htmlFor={`enabled-${camera.id}`} className="text-xs text-muted-foreground">

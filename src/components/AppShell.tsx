@@ -3,9 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Camera,
+  FolderKanban,
   Gauge,
   ListFilter,
   LogOut,
+  MapPin,
   ShieldAlert,
   ShieldCheck,
   Settings as SettingsIcon,
@@ -20,6 +22,8 @@ import { cn } from "@/lib/utils";
 
 const NAV = [
   { to: "/dashboard", label: "Live", icon: Gauge },
+  { to: "/map", label: "Map & Journey", icon: MapPin },
+  { to: "/cases", label: "Cases", icon: FolderKanban },
   { to: "/events", label: "Events", icon: ListFilter },
   { to: "/alerts", label: "Alerts", icon: ShieldAlert },
   { to: "/watchlist", label: "Watchlist", icon: ShieldCheck },

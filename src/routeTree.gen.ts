@@ -14,8 +14,10 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAlertsRouteImport } from './routes/_authenticated/alerts'
 import { Route as AuthenticatedCamerasRouteImport } from './routes/_authenticated/cameras'
+import { Route as AuthenticatedCasesRouteImport } from './routes/_authenticated/cases'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedEventsRouteImport } from './routes/_authenticated/events'
+import { Route as AuthenticatedMapRouteImport } from './routes/_authenticated/map'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedWatchlistRouteImport } from './routes/_authenticated/watchlist'
 import { Route as ApiPublicIngestRouteImport } from './routes/api/public/ingest'
@@ -44,6 +46,11 @@ const AuthenticatedCamerasRoute = AuthenticatedCamerasRouteImport.update({
   path: '/cameras',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCasesRoute = AuthenticatedCasesRouteImport.update({
+  id: '/cases',
+  path: '/cases',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -52,6 +59,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 const AuthenticatedEventsRoute = AuthenticatedEventsRouteImport.update({
   id: '/events',
   path: '/events',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMapRoute = AuthenticatedMapRouteImport.update({
+  id: '/map',
+  path: '/map',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
@@ -75,8 +87,10 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/alerts': typeof AuthenticatedAlertsRoute
   '/cameras': typeof AuthenticatedCamerasRoute
+  '/cases': typeof AuthenticatedCasesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/events': typeof AuthenticatedEventsRoute
+  '/map': typeof AuthenticatedMapRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/watchlist': typeof AuthenticatedWatchlistRoute
   '/api/public/ingest': typeof ApiPublicIngestRoute
@@ -86,8 +100,10 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/alerts': typeof AuthenticatedAlertsRoute
   '/cameras': typeof AuthenticatedCamerasRoute
+  '/cases': typeof AuthenticatedCasesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/events': typeof AuthenticatedEventsRoute
+  '/map': typeof AuthenticatedMapRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/watchlist': typeof AuthenticatedWatchlistRoute
   '/api/public/ingest': typeof ApiPublicIngestRoute
@@ -99,8 +115,10 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/alerts': typeof AuthenticatedAlertsRoute
   '/_authenticated/cameras': typeof AuthenticatedCamerasRoute
+  '/_authenticated/cases': typeof AuthenticatedCasesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/events': typeof AuthenticatedEventsRoute
+  '/_authenticated/map': typeof AuthenticatedMapRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/watchlist': typeof AuthenticatedWatchlistRoute
   '/api/public/ingest': typeof ApiPublicIngestRoute
@@ -112,8 +130,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/alerts'
     | '/cameras'
+    | '/cases'
     | '/dashboard'
     | '/events'
+    | '/map'
     | '/settings'
     | '/watchlist'
     | '/api/public/ingest'
@@ -123,8 +143,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/alerts'
     | '/cameras'
+    | '/cases'
     | '/dashboard'
     | '/events'
+    | '/map'
     | '/settings'
     | '/watchlist'
     | '/api/public/ingest'
@@ -135,8 +157,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/alerts'
     | '/_authenticated/cameras'
+    | '/_authenticated/cases'
     | '/_authenticated/dashboard'
     | '/_authenticated/events'
+    | '/_authenticated/map'
     | '/_authenticated/settings'
     | '/_authenticated/watchlist'
     | '/api/public/ingest'
@@ -186,6 +210,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCamerasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/cases': {
+      id: '/_authenticated/cases'
+      path: '/cases'
+      fullPath: '/cases'
+      preLoaderRoute: typeof AuthenticatedCasesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -198,6 +229,13 @@ declare module '@tanstack/react-router' {
       path: '/events'
       fullPath: '/events'
       preLoaderRoute: typeof AuthenticatedEventsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/map': {
+      id: '/_authenticated/map'
+      path: '/map'
+      fullPath: '/map'
+      preLoaderRoute: typeof AuthenticatedMapRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/settings': {
@@ -227,8 +265,10 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAlertsRoute: typeof AuthenticatedAlertsRoute
   AuthenticatedCamerasRoute: typeof AuthenticatedCamerasRoute
+  AuthenticatedCasesRoute: typeof AuthenticatedCasesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEventsRoute: typeof AuthenticatedEventsRoute
+  AuthenticatedMapRoute: typeof AuthenticatedMapRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedWatchlistRoute: typeof AuthenticatedWatchlistRoute
 }
@@ -236,8 +276,10 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAlertsRoute: AuthenticatedAlertsRoute,
   AuthenticatedCamerasRoute: AuthenticatedCamerasRoute,
+  AuthenticatedCasesRoute: AuthenticatedCasesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEventsRoute: AuthenticatedEventsRoute,
+  AuthenticatedMapRoute: AuthenticatedMapRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedWatchlistRoute: AuthenticatedWatchlistRoute,
 }
