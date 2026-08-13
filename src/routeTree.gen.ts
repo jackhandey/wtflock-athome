@@ -13,8 +13,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAlertsRouteImport } from './routes/_authenticated/alerts'
+import { Route as AuthenticatedCamerasRouteImport } from './routes/_authenticated/cameras'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedEventsRouteImport } from './routes/_authenticated/events'
+import { Route as AuthenticatedWatchlistRouteImport } from './routes/_authenticated/watchlist'
 import { Route as ApiPublicIngestRouteImport } from './routes/api/public/ingest'
 
 const IndexRoute = IndexRouteImport.update({
@@ -36,6 +38,11 @@ const AuthenticatedAlertsRoute = AuthenticatedAlertsRouteImport.update({
   path: '/alerts',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCamerasRoute = AuthenticatedCamerasRouteImport.update({
+  id: '/cameras',
+  path: '/cameras',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -44,6 +51,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 const AuthenticatedEventsRoute = AuthenticatedEventsRouteImport.update({
   id: '/events',
   path: '/events',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedWatchlistRoute = AuthenticatedWatchlistRouteImport.update({
+  id: '/watchlist',
+  path: '/watchlist',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const ApiPublicIngestRoute = ApiPublicIngestRouteImport.update({
@@ -56,16 +68,20 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/alerts': typeof AuthenticatedAlertsRoute
+  '/cameras': typeof AuthenticatedCamerasRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/events': typeof AuthenticatedEventsRoute
+  '/watchlist': typeof AuthenticatedWatchlistRoute
   '/api/public/ingest': typeof ApiPublicIngestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/alerts': typeof AuthenticatedAlertsRoute
+  '/cameras': typeof AuthenticatedCamerasRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/events': typeof AuthenticatedEventsRoute
+  '/watchlist': typeof AuthenticatedWatchlistRoute
   '/api/public/ingest': typeof ApiPublicIngestRoute
 }
 export interface FileRoutesById {
@@ -74,25 +90,43 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/alerts': typeof AuthenticatedAlertsRoute
+  '/_authenticated/cameras': typeof AuthenticatedCamerasRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/events': typeof AuthenticatedEventsRoute
+  '/_authenticated/watchlist': typeof AuthenticatedWatchlistRoute
   '/api/public/ingest': typeof ApiPublicIngestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/auth' | '/alerts' | '/dashboard' | '/events' | '/api/public/ingest'
+    | '/'
+    | '/auth'
+    | '/alerts'
+    | '/cameras'
+    | '/dashboard'
+    | '/events'
+    | '/watchlist'
+    | '/api/public/ingest'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/auth' | '/alerts' | '/dashboard' | '/events' | '/api/public/ingest'
+    | '/'
+    | '/auth'
+    | '/alerts'
+    | '/cameras'
+    | '/dashboard'
+    | '/events'
+    | '/watchlist'
+    | '/api/public/ingest'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/alerts'
+    | '/_authenticated/cameras'
     | '/_authenticated/dashboard'
     | '/_authenticated/events'
+    | '/_authenticated/watchlist'
     | '/api/public/ingest'
   fileRoutesById: FileRoutesById
 }
@@ -133,6 +167,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAlertsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/cameras': {
+      id: '/_authenticated/cameras'
+      path: '/cameras'
+      fullPath: '/cameras'
+      preLoaderRoute: typeof AuthenticatedCamerasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -147,6 +188,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEventsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/watchlist': {
+      id: '/_authenticated/watchlist'
+      path: '/watchlist'
+      fullPath: '/watchlist'
+      preLoaderRoute: typeof AuthenticatedWatchlistRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/ingest': {
       id: '/api/public/ingest'
       path: '/api/public/ingest'
@@ -159,14 +207,18 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAlertsRoute: typeof AuthenticatedAlertsRoute
+  AuthenticatedCamerasRoute: typeof AuthenticatedCamerasRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEventsRoute: typeof AuthenticatedEventsRoute
+  AuthenticatedWatchlistRoute: typeof AuthenticatedWatchlistRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAlertsRoute: AuthenticatedAlertsRoute,
+  AuthenticatedCamerasRoute: AuthenticatedCamerasRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEventsRoute: AuthenticatedEventsRoute,
+  AuthenticatedWatchlistRoute: AuthenticatedWatchlistRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
