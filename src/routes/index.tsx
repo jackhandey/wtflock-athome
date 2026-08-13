@@ -10,13 +10,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "HomeWatch turns your home RTSP or snapshot cameras into a private plate-reading network with watchlist alerts, searchable event history and CSV export.",
+          "Home Flock enables home camera system integration with Flock's security features.",
       },
       { property: "og:title", content: "HomeWatch — Plate Reading for Your Own Cameras" },
       {
         property: "og:description",
         content:
-          "Private license plate recognition, watchlist alerts and searchable detection history for your home cameras.",
+          "Home Flock enables home camera system integration with Flock's security features.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

@@ -79,19 +79,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "HomeWatch — Camera Intelligence" },
+      { title: "HomeWatch — Plate Reading for Your Own Cameras" },
       {
         name: "description",
-        content: "Private plate reading, watchlist alerts and event history for your home cameras.",
+        content: "Home Flock enables home camera system integration with Flock's security features.",
       },
-      { property: "og:title", content: "HomeWatch — Camera Intelligence" },
+      { property: "og:title", content: "HomeWatch — Plate Reading for Your Own Cameras" },
       {
         property: "og:description",
-        content: "Private plate reading and alerting for your home cameras.",
+        content: "Home Flock enables home camera system integration with Flock's security features.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
 
+      { name: "twitter:title", content: "HomeWatch — Plate Reading for Your Own Cameras" },
+      { name: "twitter:description", content: "Home Flock enables home camera system integration with Flock's security features." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/66ba6a8a53a2178451ccce948f51b337/id-preview-5c2adc59--4420fa8a-5e6d-420e-974f-b77517602372.lovable.app-1786639704582.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/66ba6a8a53a2178451ccce948f51b337/id-preview-5c2adc59--4420fa8a-5e6d-420e-974f-b77517602372.lovable.app-1786639704582.png" },
     ],
     links: [
       {
