@@ -3,15 +3,11 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-function hashKey(raw: string): string {
-  return Array.from(new Uint8Array(0)).length === 0 ? sha256Hex(raw) : sha256Hex(raw);
-}
-
-function sha256Hex(raw: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { createHash } = require("crypto") as typeof import("crypto");
+async function hashKey(raw: string): Promise<string> {
+  const { createHash } = await import("crypto");
   return createHash("sha256").update(raw).digest("hex");
 }
+
 
 export const listDeviceKeys = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
