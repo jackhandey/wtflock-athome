@@ -11,6 +11,8 @@ export type AlertRow = {
   acknowledged_at: string | null;
   event_id: string;
   cameraId: string | null;
+  camera_name: string | null;
+
   capturedAt: string | null;
   imageUrl: string | null;
 };
