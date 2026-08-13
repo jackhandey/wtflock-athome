@@ -50,14 +50,20 @@ export const updateCamera = createServerFn({ method: "POST" })
     CameraInput.partial().extend({ id: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const patch: Record<string, unknown> = {};
-    if (data.name !== undefined) patch["name"] = data.name;
-    if (data.location !== undefined) patch["location"] = data.location;
-    if (data.sourceType !== undefined) patch["source_type"] = data.sourceType;
-    if (data.url !== undefined) patch["url"] = data.url;
-    if (data.pollIntervalSeconds !== undefined)
-      patch["poll_interval_seconds"] = data.pollIntervalSeconds;
-    if (data.enabled !== undefined) patch["enabled"] = data.enabled;
+    const patch: {
+      name?: string;
+      location?: string | null;
+      source_type?: "snapshot" | "rtsp";
+      url?: string;
+      poll_interval_seconds?: number;
+      enabled?: boolean;
+    } = {};
+    if (data.name !== undefined) patch.name = data.name;
+    if (data.location !== undefined) patch.location = data.location;
+    if (data.sourceType !== undefined) patch.source_type = data.sourceType;
+    if (data.url !== undefined) patch.url = data.url;
+    if (data.pollIntervalSeconds !== undefined) patch.poll_interval_seconds = data.pollIntervalSeconds;
+    if (data.enabled !== undefined) patch.enabled = data.enabled;
 
     const { error } = await context.supabase.from("cameras").update(patch).eq("id", data.id);
     if (error) throw new Error(error.message);
