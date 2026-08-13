@@ -28,6 +28,7 @@ export function buildBridgeScript(
 // HomeWatch bridge agent — run this on a machine on your home network.
 // Usage:  HOMEWATCH_KEY=hw_xxx node homewatch-bridge.mjs
 // RTSP cameras require ffmpeg on PATH.
+// PRO-TIP: For 95% API cost reduction & instant capture, trigger frame pushes on camera motion events instead of continuous 24/7 polling.
 
 import { execFile } from "node:child_process";
 import { readFile, unlink } from "node:fs/promises";

@@ -188,6 +188,15 @@ function SettingsPage() {
             </div>
           </div>
 
+          <div className="rounded-md bg-amber-950/30 border border-amber-500/40 p-3 space-y-1">
+            <span className="font-bold text-amber-400 flex items-center gap-1.5 text-xs">
+              ⚡ Pro-Tip: Motion Triggers vs. Continuous Polling (Cuts Costs by 95%)
+            </span>
+            <p className="text-amber-200/80 text-[11px]">
+              Instead of fetching 1 frame every 10 seconds 24/7, configure your camera's ONVIF/RTSP motion sensor or Home Assistant to push frames <strong>only when a vehicle enters the frame</strong>. This cuts AI API costs by 95% and captures fast-moving vehicles the exact second they arrive!
+            </p>
+          </div>
+
           <div className="rounded-md bg-slate-950 p-3 font-mono text-[11px] text-slate-200 border border-slate-800 space-y-1">
             <p className="text-slate-400"># Run this in your terminal on any computer on your home network:</p>
             <p className="text-emerald-400">HOMEWATCH_KEY=your_key_here node homewatch-bridge.mjs</p>

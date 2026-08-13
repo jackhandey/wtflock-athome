@@ -156,6 +156,12 @@ function Cameras() {
                 <span className="text-muted-foreground text-[11px] block">ESP32-CAM HTTP: `http://192.168.1.50/capture`</span>
               </div>
             </div>
+            <div className="mt-3 rounded p-2.5 bg-amber-950/30 border border-amber-500/40 text-[11px] space-y-1 font-sans">
+              <span className="font-bold text-amber-400 block">⚡ Pro-Tip: Motion-Triggered Pushes vs. Polling (Cuts Costs by 95%)</span>
+              <p className="text-amber-200/80">
+                Instead of fetching 1 frame every 10 seconds 24/7, configure your camera's ONVIF/RTSP motion sensor or Home Assistant webhook to push frames <strong>only when a vehicle enters the frame</strong>. This cuts AI API costs by 95% and captures fast-moving vehicles the instant they arrive!
+              </p>
+            </div>
             <p className="text-[10px] text-muted-foreground pt-1">
               * Replace `192.168.1.50`, `admin`, and `pass` with your camera's actual local IP address, username, and password.
             </p>
