@@ -1,24 +1,80 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ShieldCheck, Camera, ScanLine, BellRing } from "lucide-react";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
+import { Button } from "@/components/ui/button";
+
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "HomeWatch — Plate Reading for Your Own Cameras" },
+      {
+        name: "description",
+        content:
+          "HomeWatch turns your home RTSP or snapshot cameras into a private plate-reading network with watchlist alerts, searchable event history and CSV export.",
+      },
+      { property: "og:title", content: "HomeWatch — Plate Reading for Your Own Cameras" },
+      {
+        property: "og:description",
+        content:
+          "Private license plate recognition, watchlist alerts and searchable detection history for your home cameras.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: Landing,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+const FEATURES = [
+  {
+    icon: ScanLine,
+    title: "Plate reads on every frame",
+    body: "Vehicle make, color, type, person count and plate text extracted from each sampled frame.",
+  },
+  {
+    icon: BellRing,
+    title: "Watchlist alerts",
+    body: "Fuzzy matching catches partial or misread plates and raises an alert instantly.",
+  },
+  {
+    icon: Camera,
+    title: "Your cameras, your network",
+    body: "A local bridge agent pulls frames from RTSP or snapshot URLs — credentials never leave home.",
+  },
+];
+
+function Landing() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <main className="grid-scan min-h-screen">
+      <div className="mx-auto max-w-5xl px-4 py-24">
+        <div className="flex items-center gap-2 text-primary">
+          <ShieldCheck className="h-5 w-5" />
+          <span className="plate text-sm font-semibold">HOMEWATCH</span>
+        </div>
+        <h1 className="mt-8 max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl">
+          Plate reading and watchlist alerting for the cameras you already own.
+        </h1>
+        <p className="mt-5 max-w-2xl text-muted-foreground">
+          Point HomeWatch at your driveway and gate cameras. Every sampled frame is analyzed for
+          vehicles, plates and people, logged with a snapshot, and matched against your own
+          watchlist.
+        </p>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Button asChild size="lg">
+            <Link to="/auth">Open the console</Link>
+          </Button>
+        </div>
+
+        <div className="mt-20 grid gap-6 sm:grid-cols-3">
+          {FEATURES.map((feature) => (
+            <div key={feature.title} className="rounded-lg border border-border/70 bg-card/60 p-5">
+              <feature.icon className="h-5 w-5 text-primary" />
+              <h2 className="mt-3 text-base font-semibold">{feature.title}</h2>
+              <p className="mt-1.5 text-sm text-muted-foreground">{feature.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </main>
   );
 }
