@@ -68,6 +68,8 @@ export const listEvents = createServerFn({ method: "POST" })
     return (rows ?? []).map((row, index) => ({
       id: row.id,
       camera_id: row.camera_id,
+      camera_name: (row as { cameras?: { name: string } | null }).cameras?.name ?? null,
+
       captured_at: row.captured_at,
       image_path: row.image_path,
       plate_text: row.plate_text,
