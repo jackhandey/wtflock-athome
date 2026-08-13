@@ -54,6 +54,9 @@ export const listAlerts = createServerFn({ method: "POST" })
       acknowledged_at: row.acknowledged_at,
       event_id: row.event_id,
       cameraId: row.events?.camera_id ?? null,
+      camera_name:
+        (row.events as { cameras?: { name: string } | null } | null)?.cameras?.name ?? null,
+
       capturedAt: row.events?.captured_at ?? null,
       imageUrl: row.events?.image_path ? urlByPath.get(row.events.image_path) ?? null : null,
     }));
