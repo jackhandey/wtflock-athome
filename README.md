@@ -1,8 +1,6 @@
 # Home Flock
 
-Could I make a version of the Flock software that I could apply to my home camera systems?
-
-This project was built with [Lovable](https://lovable.dev).
+This project was initially built with [Lovable](https://lovable.dev).
 
 **Live app**: https://wtflock-athome.lovable.app
 
