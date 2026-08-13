@@ -66,11 +66,12 @@ function SettingsPage() {
 
   const cleanup = useMutation({
     mutationFn: () => purge({}),
-    onSuccess: (result: { deleted?: number }) => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
-      toast.success(`Purged ${result?.deleted ?? 0} old event(s)`);
+      toast.success(`Purged ${result?.removed ?? 0} old event(s)`);
     },
   });
+
 
   const issue = useMutation({
     mutationFn: () => makeKey({ data: { name: keyName } }),
