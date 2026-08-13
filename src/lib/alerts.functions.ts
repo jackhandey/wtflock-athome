@@ -25,7 +25,7 @@ export const listAlerts = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<AlertRow[]> => {
     let query = context.supabase
       .from("alerts")
-      .select("*, events(camera_id, captured_at, image_path)")
+      .select("*, events(camera_id, captured_at, image_path, cameras(name))")
       .order("created_at", { ascending: false })
       .limit(100);
     if (data.openOnly) query = query.is("acknowledged_at", null);
