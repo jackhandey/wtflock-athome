@@ -78,26 +78,31 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "HomeWatch — Plate Reading for Your Own Cameras" },
+      { title: "HomeWatch — Open-Source Flock Safety Alternative for Home Cameras" },
       {
         name: "description",
         content:
-          "Home Flock enables home camera system integration with Flock's security features.",
+          "Transform home RTSP cameras into an AI-powered Flock Safety alternative. Automated license plate recognition (ALPR), visual BOLOs, repeat-pass casing alerts, convoy tracking, and police-ready evidence dossiers.",
       },
-      { property: "og:title", content: "HomeWatch — Plate Reading for Your Own Cameras" },
+      {
+        name: "keywords",
+        content:
+          "flock safety alternative, open source alpr, home alpr, diy flock camera, license plate reader, vehicle intelligence, frigate alpr, unifi protect alpr, visual bolo, casing alert, convoy tracking",
+      },
+      { property: "og:title", content: "HomeWatch — Open-Source Flock Safety Alternative for Home Cameras" },
       {
         property: "og:description",
         content:
-          "Home Flock enables home camera system integration with Flock's security features.",
+          "Transform home RTSP cameras into an AI-powered Flock Safety alternative. Automated license plate recognition (ALPR), visual BOLOs, repeat-pass casing alerts, convoy tracking, and police-ready evidence dossiers.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
 
-      { name: "twitter:title", content: "HomeWatch — Plate Reading for Your Own Cameras" },
+      { name: "twitter:title", content: "HomeWatch — Open-Source Flock Safety Alternative for Home Cameras" },
       {
         name: "twitter:description",
         content:
-          "Home Flock enables home camera system integration with Flock's security features.",
+          "Transform home RTSP cameras into an AI-powered Flock Safety alternative. Automated license plate recognition (ALPR), visual BOLOs, repeat-pass casing alerts, convoy tracking, and police-ready evidence dossiers.",
       },
       {
         property: "og:image",

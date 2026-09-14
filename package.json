@@ -1,5 +1,20 @@
 {
-  "name": "tanstack_start_ts",
+  "name": "homewatch",
+  "version": "1.0.0",
+  "description": "Open-Source Flock Safety Alternative for Home Cameras - Automated License Plate Recognition (ALPR), Visual BOLOs, and Vehicle Intelligence",
+  "keywords": [
+    "flock-safety",
+    "alpr",
+    "license-plate-recognition",
+    "vehicle-intelligence",
+    "home-assistant",
+    "frigate",
+    "unifi-protect",
+    "bolo",
+    "casing-detection",
+    "convoy-tracking",
+    "neighborhood-watch"
+  ],
   "private": true,
   "sideEffects": false,
   "type": "module",
