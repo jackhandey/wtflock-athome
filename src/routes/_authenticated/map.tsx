@@ -82,12 +82,22 @@ function MapView() {
     queryFn: () => fetchRecentEvents({ data: { limit: 40, platesOnly: true } }),
   });
 
+  const defaultFlow = {
+    totalPasses: 0,
+    dwellMinutes: null as number | null,
+    entryCamera: null as string | null,
+    exitCamera: null as string | null,
+    isTransit: false,
+    firstSeen: null as string | null,
+    lastSeen: null as string | null,
+  };
+
   const journeyQuery = useQuery({
     queryKey: ["journey", activePlate],
     queryFn: () =>
       activePlate
         ? fetchJourney({ data: { plate: activePlate } })
-        : Promise.resolve({ events: [] }),
+        : Promise.resolve({ events: [], flow: defaultFlow }),
     enabled: Boolean(activePlate),
   });
 
@@ -439,6 +449,50 @@ function MapView() {
               ) : null}
             </div>
           </Card>
+
+          {/* Flock Dwell & Flow Analytics */}
+          {journeyQuery.data?.flow && journeyQuery.data.flow.totalPasses > 0 ? (
+            <Card className="bg-card/70 border-border/80">
+              <CardContent className="p-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <div className="rounded-lg bg-secondary/50 p-2.5 border border-border/40">
+                    <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
+                      Total Route Passes
+                    </span>
+                    <span className="text-base font-bold">
+                      {journeyQuery.data.flow.totalPasses} capture(s)
+                    </span>
+                  </div>
+                  <div className="rounded-lg bg-secondary/50 p-2.5 border border-border/40">
+                    <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
+                      Perimeter Dwell Time
+                    </span>
+                    <span className="text-base font-bold text-amber-400">
+                      {journeyQuery.data.flow.dwellMinutes !== null
+                        ? `${journeyQuery.data.flow.dwellMinutes} mins`
+                        : "Single Pass"}
+                    </span>
+                  </div>
+                  <div className="rounded-lg bg-secondary/50 p-2.5 border border-border/40">
+                    <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
+                      Ingress Entry
+                    </span>
+                    <span className="font-medium truncate block text-sm">
+                      {journeyQuery.data.flow.entryCamera || "N/A"}
+                    </span>
+                  </div>
+                  <div className="rounded-lg bg-secondary/50 p-2.5 border border-border/40">
+                    <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
+                      Trajectory
+                    </span>
+                    <span className="font-medium block text-sm text-primary">
+                      {journeyQuery.data.flow.isTransit ? "Transit (Multi-Sector)" : "Local Sector"}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
         </div>
 
         {/* Right Column: Step-by-Step Vehicle Journey Timeline */}

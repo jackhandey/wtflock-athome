@@ -49,7 +49,9 @@ Rules:
 - model: Specific model name if recognizable (e.g., Civic, F-150, Camry, Model Y, Silverado).
 - generation: Estimated year/generation range (e.g. "2016-2021").
 - unique_features: Array of distinct visible identifiers, e.g. ["roof_rack", "bumper_sticker", "dented_bumper", "window_tint", "custom_wheels", "tow_hitch", "tool_rack"]. Use empty array [] if none.
-- summary: Concise 1-sentence description (max 20 words).`;
+- summary: Concise 1-sentence description (max 20 words).
+- NIGHT & IR OPTIMIZATION: For night or infrared (black/white) camera frames, overcome retroreflective plate glare by inspecting dark embossing edges and state header silhouettes. If headlights or taillights cause flare, utilize body contours, DRL light signatures, and grill shape to identify make and model.
+- TEMPORARY TAGS: If a paper tag is mounted in the bracket or taped inside the rear window, set plate_type to 'Temporary Paper Tag' and extract the bold alphanumeric sequence.`;
 
 type GatewayVehicle = {
   plate?: string | null;

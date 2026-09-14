@@ -138,7 +138,10 @@
 }
 
 @media print {
-  header, nav, button, .no-print {
+  header,
+  nav,
+  button,
+  .no-print {
     display: none !important;
   }
 
@@ -148,14 +151,22 @@
     background-image: none !important;
   }
 
-  .card, div[class*="Card"] {
+  .card,
+  div[class*="Card"] {
     border: 1px solid #cccccc !important;
     background: #ffffff !important;
     color: #000000 !important;
     box-shadow: none !important;
   }
 
-  h1, h2, h3, p, span, label, td, th {
+  h1,
+  h2,
+  h3,
+  p,
+  span,
+  label,
+  td,
+  th {
     color: #000000 !important;
   }
 

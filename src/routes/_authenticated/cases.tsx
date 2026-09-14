@@ -186,7 +186,7 @@ function CasesView() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 print:hidden">
         <div>
           <h1 className="text-2xl font-semibold">Investigative Case Management</h1>
           <p className="text-sm text-muted-foreground">
@@ -202,7 +202,7 @@ function CasesView() {
 
       <div className="grid gap-6 lg:grid-cols-3 items-start">
         {/* Left Column: Cases List */}
-        <div className="space-y-4">
+        <div className="space-y-4 print:hidden">
           <Card className="bg-card/70 border border-border/70">
             <CardHeader className="py-3 px-4 border-b border-border/50">
               <CardTitle className="text-sm font-medium flex items-center justify-between">
@@ -263,7 +263,7 @@ function CasesView() {
         </div>
 
         {/* Right 2 Columns: Selected Case Detail Dossier */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-4 print:col-span-3 print:w-full">
           {!activeCaseId ? (
             <Card className="bg-card/40 border border-border/40">
               <CardContent className="py-16 text-center text-sm text-muted-foreground space-y-2">
@@ -282,6 +282,37 @@ function CasesView() {
             </Card>
           ) : activeCaseData ? (
             <div className="space-y-6">
+              {/* Official Law Enforcement Header (Visible on Print Only) */}
+              <div className="hidden print:block border-b-2 border-slate-900 pb-4 mb-6 text-slate-900">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h1 className="text-2xl font-black tracking-tight uppercase">
+                      POLICE INCIDENT EVIDENCE DOSSIER
+                    </h1>
+                    <p className="text-xs font-semibold text-slate-600">
+                      HomeWatch Security Intelligence • Perimeter ALPR Audit System
+                    </p>
+                  </div>
+                  <div className="text-right text-xs">
+                    <p className="font-mono font-bold text-sm">
+                      CASE: {activeCaseData.case_number}
+                    </p>
+                    <p className="text-slate-500">GENERATED: {format(new Date(), "PPP p")}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4 mt-4 pt-3 border-t border-slate-300 text-xs">
+                  <div>
+                    <span className="font-bold">Investigating Agency:</span> ___________________
+                  </div>
+                  <div>
+                    <span className="font-bold">Investigating Officer:</span> ___________________
+                  </div>
+                  <div>
+                    <span className="font-bold">Badge / CAD Incident #:</span> ___________________
+                  </div>
+                </div>
+              </div>
+
               {/* Dossier Header Card */}
               <Card className="bg-card/70 border border-border/70">
                 <CardHeader className="py-4 px-6 border-b border-border/50 flex flex-row items-center justify-between flex-wrap gap-3">
@@ -508,7 +539,7 @@ function CasesView() {
 
       {/* Modal 1: Create Case Dialog */}
       {showCreateModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 print:hidden">
           <Card className="w-full max-w-md bg-card border border-border shadow-2xl">
             <CardHeader className="py-4 px-6 border-b border-border flex flex-row items-center justify-between">
               <CardTitle className="text-base font-semibold">New Incident Case Folder</CardTitle>
@@ -565,7 +596,7 @@ function CasesView() {
 
       {/* Modal 2: Attach Evidence Event Picker */}
       {showAttachModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 print:hidden">
           <Card className="w-full max-w-2xl bg-card border border-border shadow-2xl max-h-[85vh] flex flex-col">
             <CardHeader className="py-4 px-6 border-b border-border flex flex-row items-center justify-between">
               <CardTitle className="text-base font-semibold">

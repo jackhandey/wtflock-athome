@@ -43,6 +43,8 @@ export type EventRow = {
   person_count: number;
   summary: string | null;
   imageUrl: string | null;
+  seen_count_30d: number;
+  is_resident: boolean;
 };
 
 export const listEvents = createServerFn({ method: "POST" })
@@ -85,32 +87,75 @@ export const listEvents = createServerFn({ method: "POST" })
     const { data: rows, error } = await query;
     if (error) throw new Error(error.message);
 
+    // Batch compute 30-day frequency & resident whitelist flags
+    const distinctPlates = Array.from(
+      new Set((rows ?? []).map((r) => r.plate_normalized).filter(Boolean)),
+    ) as string[];
+
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const frequencyMap = new Map<string, number>();
+
+    const [freqResult, residentResult] = await Promise.all([
+      distinctPlates.length
+        ? context.supabase
+            .from("events")
+            .select("plate_normalized")
+            .in("plate_normalized", distinctPlates)
+            .gte("captured_at", thirtyDaysAgo)
+        : Promise.resolve({ data: [] }),
+      distinctPlates.length
+        ? context.supabase
+            .from("watchlist_plates")
+            .select("plate_normalized")
+            .eq("is_resident", true)
+            .in("plate_normalized", distinctPlates)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    for (const r of freqResult.data ?? []) {
+      if (r.plate_normalized) {
+        frequencyMap.set(r.plate_normalized, (frequencyMap.get(r.plate_normalized) ?? 0) + 1);
+      }
+    }
+
+    const residentSet = new Set(
+      (residentResult.data ?? []).map((r) => r.plate_normalized).filter(Boolean),
+    );
+
     const paths = (rows ?? []).map((row) => row.image_path);
     const signed = paths.length
       ? await context.supabase.storage.from("snapshots").createSignedUrls(paths, 3600)
       : { data: [] as { signedUrl: string }[] };
 
-    return (rows ?? []).map((row, index) => ({
-      id: row.id,
-      camera_id: row.camera_id,
-      camera_name: (row as { cameras?: { name: string } | null }).cameras?.name ?? null,
-      captured_at: row.captured_at,
-      image_path: row.image_path,
-      plate_text: row.plate_text,
-      plate_confidence: row.plate_confidence,
-      plate_state: row.plate_state ?? null,
-      plate_type: row.plate_type ?? null,
-      vehicle_color: row.vehicle_color,
-      vehicle_type: row.vehicle_type,
-      vehicle_make: row.vehicle_make,
-      vehicle_model: row.vehicle_model ?? null,
-      vehicle_generation: row.vehicle_generation ?? null,
-      unique_features: row.unique_features ?? [],
-      vehicle_count: row.vehicle_count,
-      person_count: row.person_count,
-      summary: row.summary,
-      imageUrl: signed.data?.[index]?.signedUrl ?? null,
-    }));
+    return (rows ?? []).map((row, index) => {
+      const plateNorm = row.plate_normalized;
+      const seenCount = plateNorm ? (frequencyMap.get(plateNorm) ?? 1) : 1;
+      const isResident = Boolean(plateNorm && residentSet.has(plateNorm));
+
+      return {
+        id: row.id,
+        camera_id: row.camera_id,
+        camera_name: (row as { cameras?: { name: string } | null }).cameras?.name ?? null,
+        captured_at: row.captured_at,
+        image_path: row.image_path,
+        plate_text: row.plate_text,
+        plate_confidence: row.plate_confidence,
+        plate_state: row.plate_state ?? null,
+        plate_type: row.plate_type ?? null,
+        vehicle_color: row.vehicle_color,
+        vehicle_type: row.vehicle_type,
+        vehicle_make: row.vehicle_make,
+        vehicle_model: row.vehicle_model ?? null,
+        vehicle_generation: row.vehicle_generation ?? null,
+        unique_features: row.unique_features ?? [],
+        vehicle_count: row.vehicle_count,
+        person_count: row.person_count,
+        summary: row.summary,
+        imageUrl: signed.data?.[index]?.signedUrl ?? null,
+        seen_count_30d: seenCount,
+        is_resident: isResident,
+      };
+    });
   });
 
 export const latestPerCamera = createServerFn({ method: "GET" })
@@ -195,8 +240,17 @@ export const getVehicleJourney = createServerFn({ method: "POST" })
     z.object({ plate: z.string().min(1), limit: z.number().int().optional() }).parse(input),
   )
   .handler(async ({ data, context }) => {
+    const defaultFlow = {
+      totalPasses: 0,
+      dwellMinutes: null as number | null,
+      entryCamera: null as string | null,
+      exitCamera: null as string | null,
+      isTransit: false,
+      firstSeen: null as string | null,
+      lastSeen: null as string | null,
+    };
     const normalized = normalizePlate(data.plate);
-    if (!normalized) return { events: [], cameras: [] };
+    if (!normalized) return { events: [], flow: defaultFlow };
 
     const { data: events, error } = await context.supabase
       .from("events")
@@ -234,5 +288,90 @@ export const getVehicleJourney = createServerFn({ method: "POST" })
       };
     });
 
-    return { events: formattedEvents };
+    const first = formattedEvents[0];
+    const last = formattedEvents[formattedEvents.length - 1];
+    let dwellMinutes: number | null = null;
+    if (first && last && first.id !== last.id) {
+      const ms = new Date(last.captured_at).getTime() - new Date(first.captured_at).getTime();
+      dwellMinutes = Math.max(0, Math.round(ms / 60000));
+    }
+
+    const flow = {
+      totalPasses: formattedEvents.length,
+      dwellMinutes,
+      entryCamera: first?.camera.name ?? null,
+      exitCamera: last?.camera.name ?? null,
+      isTransit: Boolean(first && last && first.camera.id !== last.camera.id),
+      firstSeen: first?.captured_at ?? null,
+      lastSeen: last?.captured_at ?? null,
+    };
+
+    return { events: formattedEvents, flow };
+  });
+
+export const getConvoyVehicles = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    z.object({
+      eventId: z.string().uuid(),
+      windowSeconds: z.number().int().min(5).max(300).default(60),
+    }),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: targetEvent, error: targetErr } = await context.supabase
+      .from("events")
+      .select("id, captured_at, camera_id")
+      .eq("id", data.eventId)
+      .single();
+
+    if (targetErr || !targetEvent) throw new Error("Reference event not found");
+
+    const targetTime = new Date(targetEvent.captured_at).getTime();
+    const minTime = new Date(targetTime - data.windowSeconds * 1000).toISOString();
+    const maxTime = new Date(targetTime + data.windowSeconds * 1000).toISOString();
+
+    const { data: rawConvoy, error } = await context.supabase
+      .from("events")
+      .select("*, cameras(name)")
+      .neq("id", data.eventId)
+      .gte("captured_at", minTime)
+      .lte("captured_at", maxTime)
+      .order("captured_at", { ascending: true })
+      .limit(30);
+
+    if (error) throw new Error(error.message);
+
+    const paths = (rawConvoy ?? []).map((r) => r.image_path);
+    const signed = paths.length
+      ? await context.supabase.storage.from("snapshots").createSignedUrls(paths, 3600)
+      : { data: [] as { signedUrl: string }[] };
+
+    return (rawConvoy ?? []).map((row, index) => {
+      const deltaSeconds = Math.round((new Date(row.captured_at).getTime() - targetTime) / 1000);
+      const absDelta = Math.abs(deltaSeconds);
+      const deltaLabel =
+        deltaSeconds === 0
+          ? "Same second"
+          : `${absDelta}s ${deltaSeconds > 0 ? "after" : "before"}`;
+
+      return {
+        id: row.id,
+        camera_id: row.camera_id,
+        camera_name:
+          (row as { cameras?: { name: string } | null }).cameras?.name ?? "Unknown Camera",
+        captured_at: row.captured_at,
+        deltaSeconds,
+        deltaLabel,
+        plate_text: row.plate_text,
+        plate_state: row.plate_state,
+        plate_type: row.plate_type,
+        vehicle_make: row.vehicle_make,
+        vehicle_model: row.vehicle_model,
+        vehicle_color: row.vehicle_color,
+        vehicle_type: row.vehicle_type,
+        unique_features: row.unique_features ?? [],
+        summary: row.summary,
+        imageUrl: signed.data?.[index]?.signedUrl ?? null,
+      };
+    });
   });

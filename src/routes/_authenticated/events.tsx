@@ -3,13 +3,20 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { format } from "date-fns";
-import { Download, Filter, Search, Sparkles, Tag } from "lucide-react";
+import { Download, Filter, Search, ShieldCheck, Sparkles, Tag, Users } from "lucide-react";
 
 import { listCameras } from "@/lib/cameras.functions";
-import { listEvents } from "@/lib/events.functions";
+import { getConvoyVehicles, listEvents, type EventRow } from "@/lib/events.functions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -96,6 +103,17 @@ function Events() {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [filters, setFilters] = useState<Record<string, unknown>>({ limit: 120 });
+  const [convoyTarget, setConvoyTarget] = useState<EventRow | null>(null);
+
+  const fetchConvoy = useServerFn(getConvoyVehicles);
+  const convoyQuery = useQuery({
+    queryKey: ["convoy", convoyTarget?.id],
+    queryFn: () =>
+      convoyTarget
+        ? fetchConvoy({ data: { eventId: convoyTarget.id, windowSeconds: 60 } })
+        : Promise.resolve([]),
+    enabled: Boolean(convoyTarget),
+  });
 
   const cameras = useQuery({ queryKey: ["cameras"], queryFn: () => fetchCameras({}) });
   const events = useQuery({
@@ -417,9 +435,32 @@ function Events() {
                       no plate read
                     </span>
                   )}
-                  <Badge variant="outline" className="text-[10px]">
-                    {event.camera_name}
-                  </Badge>
+
+                  <div className="flex items-center gap-1.5">
+                    {event.is_resident ? (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] border-emerald-500/40 text-emerald-400 bg-emerald-500/10"
+                      >
+                        <ShieldCheck className="h-2.5 w-2.5 mr-0.5" />
+                        Resident
+                      </Badge>
+                    ) : event.seen_count_30d === 1 ? (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] border-amber-500/40 text-amber-400 bg-amber-500/10"
+                      >
+                        Seen 1x
+                      </Badge>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground font-mono">
+                        {event.seen_count_30d}x / 30d
+                      </span>
+                    )}
+                    <Badge variant="outline" className="text-[10px]">
+                      {event.camera_name}
+                    </Badge>
+                  </div>
                 </div>
 
                 <p className="font-semibold text-foreground">
@@ -451,8 +492,17 @@ function Events() {
               </CardContent>
             </div>
 
-            <CardContent className="pt-0 text-[11px] text-muted-foreground border-t border-border/40 mt-3 pt-2">
-              {format(new Date(event.captured_at), "PP p")}
+            <CardContent className="pt-0 text-[11px] text-muted-foreground border-t border-border/40 mt-3 pt-2 flex items-center justify-between">
+              <span>{format(new Date(event.captured_at), "PP p")}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[11px] gap-1 text-primary hover:text-primary hover:bg-primary/10"
+                onClick={() => setConvoyTarget(event)}
+              >
+                <Users className="h-3 w-3" />
+                Convoy
+              </Button>
             </CardContent>
           </Card>
         ))}
@@ -465,6 +515,86 @@ function Events() {
           </CardContent>
         </Card>
       ) : null}
+
+      {/* Flock Convoy & Accomplice Analysis Dialog */}
+      <Dialog open={Boolean(convoyTarget)} onOpenChange={(open) => !open && setConvoyTarget(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Users className="h-4 w-4 text-primary" />
+              Convoy & Accomplice Analysis
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Vehicles detected within ±60 seconds of{" "}
+              <strong className="text-foreground">
+                {convoyTarget?.plate_text ||
+                  [
+                    convoyTarget?.vehicle_color,
+                    convoyTarget?.vehicle_make,
+                    convoyTarget?.vehicle_model,
+                  ]
+                    .filter(Boolean)
+                    .join(" ") ||
+                  "this vehicle"}
+              </strong>{" "}
+              across all cameras.
+            </DialogDescription>
+          </DialogHeader>
+
+          {convoyQuery.isLoading ? (
+            <div className="py-8 text-center text-xs text-muted-foreground">
+              Scanning for convoy vehicles...
+            </div>
+          ) : (convoyQuery.data ?? []).length === 0 ? (
+            <div className="py-8 text-center text-xs text-muted-foreground">
+              No tandem or follow-vehicles detected within the ±60 second temporal window.
+            </div>
+          ) : (
+            <div className="space-y-3 pt-2">
+              {(convoyQuery.data ?? []).map((peer) => (
+                <Card key={peer.id} className="bg-secondary/30 border border-border/60">
+                  <CardContent className="p-3 flex items-center gap-3">
+                    {peer.imageUrl ? (
+                      <img
+                        src={peer.imageUrl}
+                        alt="Convoy vehicle"
+                        className="h-16 w-24 object-cover rounded border border-border/50 shrink-0"
+                      />
+                    ) : (
+                      <div className="h-16 w-24 rounded bg-secondary flex items-center justify-center text-[10px] text-muted-foreground shrink-0">
+                        No image
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0 text-xs space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="plate font-bold bg-secondary px-1.5 py-0.5 rounded text-xs">
+                          {peer.plate_text || "(No Plate)"}
+                        </span>
+                        <Badge variant="secondary" className="font-mono text-[10px]">
+                          {peer.deltaLabel}
+                        </Badge>
+                      </div>
+                      <p className="font-medium truncate">
+                        {[
+                          peer.vehicle_color,
+                          peer.vehicle_make,
+                          peer.vehicle_model,
+                          peer.vehicle_type,
+                        ]
+                          .filter(Boolean)
+                          .join(" ") || "Vehicle"}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        📷 {peer.camera_name} • {format(new Date(peer.captured_at), "HH:mm:ss")}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

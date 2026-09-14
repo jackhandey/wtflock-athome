@@ -144,42 +144,106 @@ export const Route = createFileRoute("/api/public/ingest")({
         }
 
         let alerted = false;
-        if (plateNormalized) {
-          const { data: watchlist } = await supabaseAdmin
-            .from("watchlist_plates")
-            .select("id, plate, plate_normalized, reason")
-            .eq("user_id", userId);
 
-          const hit = (watchlist ?? []).find((entry) =>
-            platesMatch(plateNormalized, entry.plate_normalized),
-          );
+        const { data: watchlist } = await supabaseAdmin
+          .from("watchlist_plates")
+          .select("*")
+          .eq("user_id", userId);
 
-          if (hit) {
-            const { data: newAlert } = await supabaseAdmin
+        const { evaluateWatchlist } = await import("@/lib/matching");
+        const matchResult = evaluateWatchlist(
+          {
+            plateText: detection.plateText,
+            plateNormalized,
+            plateState: detection.plateState,
+            plateType: detection.plateType,
+            vehicleColor: detection.vehicleColor,
+            vehicleType: detection.vehicleType,
+            vehicleMake: detection.vehicleMake,
+            vehicleModel: detection.vehicleModel,
+            uniqueFeatures: detection.uniqueFeatures,
+          },
+          (watchlist as import("@/lib/matching").WatchlistRule[]) ?? [],
+        );
+
+        let newAlert: { id: string } | null = null;
+        let alertReason = "suspicious";
+
+        // If explicitly whitelisted as resident, skip all alarm dispatches
+        if (!matchResult.isResident) {
+          // 1. Check for Watchlist or Visual BOLO Hit
+          if (
+            matchResult.hit &&
+            (matchResult.reason === "suspicious" || matchResult.reason === "blocked")
+          ) {
+            const alertPlate = detection.plateText ?? matchResult.hit.plate ?? "(NO PLATE)";
+            const alertNotes =
+              matchResult.matchType === "bolo"
+                ? `Visual BOLO: ${matchResult.label || matchResult.hit.notes || "Matching vehicle fingerprint"}`
+                : (matchResult.hit.notes ??
+                  `Watchlist Hit: ${matchResult.label || "Target plate match"}`);
+
+            const { data: createdAlert } = await supabaseAdmin
               .from("alerts")
               .insert({
                 user_id: userId,
                 event_id: event.id,
-                watchlist_id: hit.id,
-                plate: detection.plateText ?? hit.plate,
-                reason: hit.reason,
+                watchlist_id: matchResult.hit.id,
+                plate: alertPlate,
+                reason: matchResult.reason,
+                alert_type: matchResult.matchType === "bolo" ? "bolo" : "watchlist",
+                notes: alertNotes,
               })
               .select("id")
               .single();
 
+            newAlert = createdAlert;
             alerted = true;
+            alertReason = matchResult.reason;
+          }
 
-            // Trigger instant multi-channel webhook dispatch if configured
+          // 2. Automated Repeat Pass / Casing Detection (The Prowler Anomaly)
+          if (!alerted && plateNormalized) {
+            const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+            const { count: passCount } = await supabaseAdmin
+              .from("events")
+              .select("id", { count: "exact", head: true })
+              .eq("user_id", userId)
+              .eq("plate_normalized", plateNormalized)
+              .gte("captured_at", oneHourAgo);
+
+            if (passCount && passCount >= 2) {
+              const alertPlate = detection.plateText ?? plateNormalized;
+              const { data: createdAlert } = await supabaseAdmin
+                .from("alerts")
+                .insert({
+                  user_id: userId,
+                  event_id: event.id,
+                  plate: alertPlate,
+                  reason: "suspicious",
+                  alert_type: "casing",
+                  notes: `🚨 CASING ALERT: Vehicle detected ${passCount} times in the past 60 minutes.`,
+                })
+                .select("id")
+                .single();
+
+              newAlert = createdAlert;
+              alerted = true;
+              alertReason = "suspicious";
+            }
+          }
+
+          // 3. Dispatch Multi-channel Webhook if Alert Triggered
+          if (newAlert) {
             const { data: settings } = await supabaseAdmin
               .from("user_settings")
               .select("webhook_url, webhook_enabled")
               .eq("user_id", userId)
               .maybeSingle();
 
-            if (settings?.webhook_url && settings?.webhook_enabled !== false && newAlert) {
+            if (settings?.webhook_url && settings?.webhook_enabled !== false) {
               const { sendAlertWebhook } = await import("@/lib/webhooks.server");
 
-              // Generate signed image URL if snapshot stored
               let imageUrl: string | null = null;
               if (imagePath) {
                 const { data: signed } = await supabaseAdmin.storage
@@ -199,9 +263,9 @@ export const Route = createFileRoute("/api/public/ingest")({
 
               sendAlertWebhook(settings.webhook_url, {
                 alertId: newAlert.id,
-                plate: detection.plateText ?? hit.plate,
+                plate: detection.plateText ?? "(NO PLATE)",
                 plateState: detection.plateState,
-                reason: hit.reason,
+                reason: alertReason,
                 cameraName: camera.name ?? "Home Camera",
                 capturedAt: capturedAt,
                 summary: detection.summary,

@@ -11,9 +11,11 @@ export type Database = {
       alerts: {
         Row: {
           acknowledged_at: string | null;
+          alert_type: string;
           created_at: string;
           event_id: string;
           id: string;
+          notes: string | null;
           plate: string;
           reason: Database["public"]["Enums"]["watch_reason"];
           user_id: string;
@@ -21,9 +23,11 @@ export type Database = {
         };
         Insert: {
           acknowledged_at?: string | null;
+          alert_type?: string;
           created_at?: string;
           event_id: string;
           id?: string;
+          notes?: string | null;
           plate: string;
           reason?: Database["public"]["Enums"]["watch_reason"];
           user_id: string;
@@ -31,9 +35,11 @@ export type Database = {
         };
         Update: {
           acknowledged_at?: string | null;
+          alert_type?: string;
           created_at?: string;
           event_id?: string;
           id?: string;
+          notes?: string | null;
           plate?: string;
           reason?: Database["public"]["Enums"]["watch_reason"];
           user_id?: string;
@@ -326,31 +332,55 @@ export type Database = {
         Row: {
           created_at: string;
           id: string;
+          is_resident: boolean;
           label: string | null;
           notes: string | null;
-          plate: string;
-          plate_normalized: string;
+          plate: string | null;
+          plate_normalized: string | null;
           reason: Database["public"]["Enums"]["watch_reason"];
+          require_no_plate: boolean;
+          rule_type: string;
+          target_color: string | null;
+          target_feature: string | null;
+          target_make: string | null;
+          target_model: string | null;
+          target_plate_type: string | null;
           user_id: string;
         };
         Insert: {
           created_at?: string;
           id?: string;
+          is_resident?: boolean;
           label?: string | null;
           notes?: string | null;
-          plate: string;
-          plate_normalized: string;
+          plate?: string | null;
+          plate_normalized?: string | null;
           reason?: Database["public"]["Enums"]["watch_reason"];
+          require_no_plate?: boolean;
+          rule_type?: string;
+          target_color?: string | null;
+          target_feature?: string | null;
+          target_make?: string | null;
+          target_model?: string | null;
+          target_plate_type?: string | null;
           user_id: string;
         };
         Update: {
           created_at?: string;
           id?: string;
+          is_resident?: boolean;
           label?: string | null;
           notes?: string | null;
-          plate?: string;
-          plate_normalized?: string;
+          plate?: string | null;
+          plate_normalized?: string | null;
           reason?: Database["public"]["Enums"]["watch_reason"];
+          require_no_plate?: boolean;
+          rule_type?: string;
+          target_color?: string | null;
+          target_feature?: string | null;
+          target_make?: string | null;
+          target_model?: string | null;
+          target_plate_type?: string | null;
           user_id?: string;
         };
         Relationships: [];
