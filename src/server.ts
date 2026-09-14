@@ -44,18 +44,77 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+export function attachSecurityHeaders(response: Response): Response {
+  const applyHeaders = (headers: Headers) => {
+    if (!headers.has("X-Content-Type-Options")) {
+      headers.set("X-Content-Type-Options", "nosniff");
+    }
+    if (!headers.has("X-Frame-Options")) {
+      headers.set("X-Frame-Options", "DENY");
+    }
+    if (!headers.has("Referrer-Policy")) {
+      headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    }
+    if (!headers.has("Permissions-Policy")) {
+      headers.set("Permissions-Policy", "camera=(self), microphone=(), geolocation=(self)");
+    }
+    if (!headers.has("X-XSS-Protection")) {
+      headers.set("X-XSS-Protection", "1; mode=block");
+    }
+    if (!headers.has("Content-Security-Policy")) {
+      const contentType = headers.get("content-type") ?? "";
+      if (contentType.includes("text/html")) {
+        headers.set(
+          "Content-Security-Policy",
+          "default-src 'self'; " +
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; " +
+            "style-src 'self' 'unsafe-inline' https:; " +
+            "img-src 'self' data: blob: https:; " +
+            "font-src 'self' data: https:; " +
+            "connect-src 'self' https: http: ws: wss:; " +
+            "frame-ancestors 'none'; " +
+            "base-uri 'self'; " +
+            "form-action 'self';",
+        );
+      }
+    }
+  };
+
+  try {
+    applyHeaders(response.headers);
+    return response;
+  } catch {
+    const headers = new Headers(response.headers);
+    applyHeaders(headers);
+    const body =
+      response.status === 101 ||
+      response.status === 204 ||
+      response.status === 205 ||
+      response.status === 304
+        ? null
+        : response.body;
+    return new Response(body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  }
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      const normalized = await normalizeCatastrophicSsrResponse(response);
+      return attachSecurityHeaders(normalized);
     } catch (error) {
       console.error(error);
-      return new Response(renderErrorPage(), {
+      const fallbackResponse = new Response(renderErrorPage(), {
         status: 500,
         headers: { "content-type": "text/html; charset=utf-8" },
       });
+      return attachSecurityHeaders(fallbackResponse);
     }
   },
 };

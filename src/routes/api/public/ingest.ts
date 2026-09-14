@@ -29,9 +29,40 @@ export const Route = createFileRoute("/api/public/ingest")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const rawKey = request.headers.get("x-device-key")?.trim();
-        if (!rawKey) return json({ error: "Missing device key" }, 401);
+        // 1. Early Content-Length validation to reject oversized payloads before buffering
+        const contentLength = Number(request.headers.get("content-length") || "0");
+        if (contentLength > 15 * 1024 * 1024) {
+          return json({ error: "Payload too large. Maximum size is 15MB." }, 413);
+        }
 
+        // 2. Client IP extraction & rate limiting BEFORE any JSON parsing or database connections
+        const clientIp =
+          request.headers.get("cf-connecting-ip")?.trim() ||
+          request.headers.get("x-real-ip")?.trim() ||
+          request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+          "unknown-ip";
+
+        const ipRateLimit = checkRateLimit(`ip:${clientIp}`, 120, 60_000);
+        if (!ipRateLimit.success) {
+          const retryAfter = Math.ceil(ipRateLimit.resetInMs / 1000);
+          return json(
+            { error: "Too many requests from this IP address.", retryAfterSeconds: retryAfter },
+            429,
+            { "Retry-After": String(retryAfter) },
+          );
+        }
+
+        // 3. Early device key format validation before hashing or querying database
+        const rawKey = request.headers.get("x-device-key")?.trim();
+        if (!rawKey || !/^hw_[a-f0-9]{16,128}$/i.test(rawKey)) {
+          const failedAuth = checkRateLimit(`failed-auth:${clientIp}`, 15, 60_000);
+          if (!failedAuth.success) {
+            return json({ error: "Too many failed authentication attempts." }, 429);
+          }
+          return json({ error: "Missing or invalid device key format" }, 401);
+        }
+
+        // 4. Safe body parsing with schema validation
         let parsed;
         try {
           parsed = BodySchema.parse(await request.json());
@@ -39,6 +70,7 @@ export const Route = createFileRoute("/api/public/ingest")({
           return json({ error: "Invalid payload" }, 400);
         }
 
+        // 5. Look up key in database
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const keyHash = createHash("sha256").update(rawKey).digest("hex");
 
@@ -48,7 +80,10 @@ export const Route = createFileRoute("/api/public/ingest")({
           .eq("key_hash", keyHash)
           .maybeSingle();
 
-        if (!deviceKey || deviceKey.revoked) return json({ error: "Invalid device key" }, 401);
+        if (!deviceKey || deviceKey.revoked) {
+          checkRateLimit(`failed-auth:${clientIp}`, 15, 60_000);
+          return json({ error: "Invalid device key" }, 401);
+        }
 
         const rateLimit = checkRateLimit(`device:${deviceKey.id}`, 60, 60_000);
         if (!rateLimit.success) {
