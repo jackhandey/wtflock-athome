@@ -73,6 +73,7 @@ export type Database = {
           location: string | null;
           longitude: number | null;
           name: string;
+          node_type: string;
           poll_interval_seconds: number;
           source_type: Database["public"]["Enums"]["camera_source"];
           updated_at: string;
@@ -89,6 +90,7 @@ export type Database = {
           location?: string | null;
           longitude?: number | null;
           name: string;
+          node_type?: string;
           poll_interval_seconds?: number;
           source_type?: Database["public"]["Enums"]["camera_source"];
           updated_at?: string;
@@ -105,6 +107,7 @@ export type Database = {
           location?: string | null;
           longitude?: number | null;
           name?: string;
+          node_type?: string;
           poll_interval_seconds?: number;
           source_type?: Database["public"]["Enums"]["camera_source"];
           updated_at?: string;
@@ -243,6 +246,12 @@ export type Database = {
           vehicle_make: string | null;
           vehicle_model: string | null;
           vehicle_type: string | null;
+          latitude: number | null;
+          longitude: number | null;
+          speed_mph: number | null;
+          heading_deg: number | null;
+          node_type: string | null;
+          audio_alert_text: string | null;
         };
         Insert: {
           camera_id: string;
@@ -265,6 +274,12 @@ export type Database = {
           vehicle_make?: string | null;
           vehicle_model?: string | null;
           vehicle_type?: string | null;
+          latitude?: number | null;
+          longitude?: number | null;
+          speed_mph?: number | null;
+          heading_deg?: number | null;
+          node_type?: string | null;
+          audio_alert_text?: string | null;
         };
         Update: {
           camera_id?: string;
@@ -287,6 +302,12 @@ export type Database = {
           vehicle_make?: string | null;
           vehicle_model?: string | null;
           vehicle_type?: string | null;
+          latitude?: number | null;
+          longitude?: number | null;
+          speed_mph?: number | null;
+          heading_deg?: number | null;
+          node_type?: string | null;
+          audio_alert_text?: string | null;
         };
         Relationships: [
           {

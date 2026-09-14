@@ -13,6 +13,7 @@ const CameraInput = z.object({
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
   facingDirection: z.string().max(20).optional().nullable(),
+  nodeType: z.enum(["fixed", "dashcam", "wearable", "mobile"]).default("fixed").optional(),
 });
 
 export const listCameras = createServerFn({ method: "GET" })
@@ -43,6 +44,7 @@ export const createCamera = createServerFn({ method: "POST" })
         latitude: data.latitude ?? null,
         longitude: data.longitude ?? null,
         facing_direction: data.facingDirection ?? "Ingress",
+        node_type: data.nodeType ?? "fixed",
       })
       .select("*")
       .single();
@@ -66,6 +68,7 @@ export const updateCamera = createServerFn({ method: "POST" })
       latitude?: number | null;
       longitude?: number | null;
       facing_direction?: string | null;
+      node_type?: string;
     } = {};
     if (data.name !== undefined) patch.name = data.name;
     if (data.location !== undefined) patch.location = data.location;
@@ -77,6 +80,7 @@ export const updateCamera = createServerFn({ method: "POST" })
     if (data.latitude !== undefined) patch.latitude = data.latitude;
     if (data.longitude !== undefined) patch.longitude = data.longitude;
     if (data.facingDirection !== undefined) patch.facing_direction = data.facingDirection;
+    if (data.nodeType !== undefined) patch.node_type = data.nodeType;
 
     const { error } = await context.supabase.from("cameras").update(patch).eq("id", data.id);
     if (error) throw new Error(error.message);

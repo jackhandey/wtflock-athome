@@ -45,6 +45,12 @@ export type EventRow = {
   imageUrl: string | null;
   seen_count_30d: number;
   is_resident: boolean;
+  node_type?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  speed_mph?: number | null;
+  heading_deg?: number | null;
+  audio_alert_text?: string | null;
 };
 
 export const listEvents = createServerFn({ method: "POST" })
@@ -154,6 +160,12 @@ export const listEvents = createServerFn({ method: "POST" })
         imageUrl: signed.data?.[index]?.signedUrl ?? null,
         seen_count_30d: seenCount,
         is_resident: isResident,
+        node_type: row.node_type ?? "fixed",
+        latitude: row.latitude ?? null,
+        longitude: row.longitude ?? null,
+        speed_mph: row.speed_mph ?? null,
+        heading_deg: row.heading_deg ?? null,
+        audio_alert_text: row.audio_alert_text ?? null,
       };
     });
   });
@@ -268,6 +280,10 @@ export const getVehicleJourney = createServerFn({ method: "POST" })
 
     const formattedEvents = (events ?? []).map((row, index) => {
       const cameraObj = row.cameras;
+      const lat = row.latitude ?? cameraObj?.latitude ?? null;
+      const lng = row.longitude ?? cameraObj?.longitude ?? null;
+      const nodeType = row.node_type ?? cameraObj?.node_type ?? "fixed";
+
       return {
         id: row.id,
         captured_at: row.captured_at,
@@ -277,13 +293,17 @@ export const getVehicleJourney = createServerFn({ method: "POST" })
         vehicle_make: row.vehicle_make,
         summary: row.summary,
         imageUrl: signed.data?.[index]?.signedUrl ?? null,
+        nodeType,
+        speedMph: row.speed_mph ?? null,
+        headingDeg: row.heading_deg ?? null,
         camera: {
           id: row.camera_id,
           name: cameraObj?.name ?? "Unknown Camera",
-          latitude: cameraObj?.latitude ?? null,
-          longitude: cameraObj?.longitude ?? null,
+          latitude: lat,
+          longitude: lng,
           facingDirection: cameraObj?.facing_direction ?? "Ingress",
           location: cameraObj?.location ?? null,
+          nodeType,
         },
       };
     });

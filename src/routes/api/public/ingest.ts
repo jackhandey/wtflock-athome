@@ -11,6 +11,11 @@ const BodySchema = z.object({
   capturedAt: z.string().optional(),
   contentType: z.enum(["image/jpeg", "image/png", "image/webp"]).default("image/jpeg"),
   imageBase64: z.string().min(100).max(10_000_000),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+  speedMph: z.number().min(0).max(200).optional(),
+  headingDeg: z.number().min(0).max(360).optional(),
+  nodeType: z.enum(["fixed", "dashcam", "wearable", "mobile"]).optional(),
 });
 
 function json(body: unknown, status = 200, headers: Record<string, string> = {}) {
@@ -66,17 +71,20 @@ export const Route = createFileRoute("/api/public/ingest")({
 
         const { data: camera } = await supabaseAdmin
           .from("cameras")
-          .select("id, user_id, enabled, name")
+          .select("id, user_id, enabled, name, node_type")
           .eq("id", parsed.cameraId)
           .maybeSingle();
 
         if (!camera || camera.user_id !== userId) return json({ error: "Unknown camera" }, 404);
 
         const capturedAt = parsed.capturedAt ?? new Date().toISOString();
-        await supabaseAdmin
-          .from("cameras")
-          .update({ last_seen_at: capturedAt })
-          .eq("id", camera.id);
+        const cameraUpdate: { last_seen_at: string; latitude?: number; longitude?: number } = {
+          last_seen_at: capturedAt,
+        };
+        if (parsed.latitude !== undefined) cameraUpdate.latitude = parsed.latitude;
+        if (parsed.longitude !== undefined) cameraUpdate.longitude = parsed.longitude;
+
+        await supabaseAdmin.from("cameras").update(cameraUpdate).eq("id", camera.id);
         await supabaseAdmin
           .from("device_keys")
           .update({ last_used_at: new Date().toISOString() })
@@ -134,6 +142,11 @@ export const Route = createFileRoute("/api/public/ingest")({
             vehicle_count: detection.vehicleCount,
             person_count: detection.personCount,
             summary: detection.summary,
+            latitude: parsed.latitude ?? null,
+            longitude: parsed.longitude ?? null,
+            speed_mph: parsed.speedMph ?? null,
+            heading_deg: parsed.headingDeg ?? null,
+            node_type: parsed.nodeType ?? camera.node_type ?? "fixed",
           })
           .select("id")
           .single();
@@ -168,6 +181,7 @@ export const Route = createFileRoute("/api/public/ingest")({
 
         let newAlert: { id: string } | null = null;
         let alertReason = "suspicious";
+        let audioAlertText: string | null = null;
 
         // If explicitly whitelisted as resident, skip all alarm dispatches
         if (!matchResult.isResident) {
@@ -222,19 +236,37 @@ export const Route = createFileRoute("/api/public/ingest")({
                   plate: alertPlate,
                   reason: "suspicious",
                   alert_type: "casing",
-                  notes: `🚨 CASING ALERT: Vehicle detected ${passCount} times in the past 60 minutes.`,
+                  notes: `Automated Casing Anomaly: Vehicle passed cameras ${passCount + 1} times in under 60 minutes`,
                 })
                 .select("id")
                 .single();
 
               newAlert = createdAlert;
               alerted = true;
-              alertReason = "suspicious";
+              alertReason = "casing";
             }
           }
 
-          // 3. Dispatch Multi-channel Webhook if Alert Triggered
+          // 3. Dispatch Webhook & Save Wearable Audio TTS Text
           if (newAlert) {
+            const vehicleDesc = [
+              detection.vehicleColor,
+              detection.vehicleMake,
+              detection.vehicleModel,
+            ]
+              .filter(Boolean)
+              .join(" ");
+
+            audioAlertText =
+              alertReason === "casing"
+                ? `Warning: Casing alert. ${vehicleDesc || "Vehicle"} with plate ${detection.plateText ?? "unknown"} sighted multiple times.`
+                : `Alert: Watchlist target. ${detection.plateText ? `Plate ${detection.plateText}. ` : ""}${vehicleDesc || "Suspect vehicle"}.`;
+
+            await supabaseAdmin
+              .from("events")
+              .update({ audio_alert_text: audioAlertText })
+              .eq("id", event.id);
+
             const { data: settings } = await supabaseAdmin
               .from("user_settings")
               .select("webhook_url, webhook_enabled")
@@ -280,8 +312,13 @@ export const Route = createFileRoute("/api/public/ingest")({
           stored: true,
           eventId: event.id,
           alerted,
+          alertReason: alerted ? alertReason : undefined,
+          audioAlertText: audioAlertText ?? undefined,
           plate: detection.plateText,
           summary: detection.summary,
+          nodeType: parsed.nodeType ?? camera.node_type ?? "fixed",
+          latitude: parsed.latitude ?? null,
+          longitude: parsed.longitude ?? null,
         });
       },
     },

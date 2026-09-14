@@ -3,7 +3,19 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { format } from "date-fns";
-import { Download, Filter, Search, ShieldCheck, Sparkles, Tag, Users } from "lucide-react";
+import {
+  Download,
+  Filter,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Tag,
+  Users,
+  Car,
+  Glasses,
+  Smartphone,
+  Volume2,
+} from "lucide-react";
 
 import { listCameras } from "@/lib/cameras.functions";
 import { getConvoyVehicles, listEvents, type EventRow } from "@/lib/events.functions";
@@ -460,6 +472,28 @@ function Events() {
                     <Badge variant="outline" className="text-[10px]">
                       {event.camera_name}
                     </Badge>
+                    {event.node_type === "dashcam" ? (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] border-blue-500/30 text-blue-400 bg-blue-500/10 gap-0.5"
+                      >
+                        <Car className="h-2.5 w-2.5 mr-0.5" /> Dashcam
+                      </Badge>
+                    ) : event.node_type === "wearable" ? (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] border-purple-500/30 text-purple-400 bg-purple-500/10 gap-0.5"
+                      >
+                        <Glasses className="h-2.5 w-2.5 mr-0.5" /> Smartglasses
+                      </Badge>
+                    ) : event.node_type === "mobile" ? (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] border-cyan-500/30 text-cyan-400 bg-cyan-500/10 gap-0.5"
+                      >
+                        <Smartphone className="h-2.5 w-2.5 mr-0.5" /> Mobile
+                      </Badge>
+                    ) : null}
                   </div>
                 </div>
 
@@ -474,6 +508,14 @@ function Events() {
                   ) : null}
                 </p>
 
+                {event.speed_mph != null || event.heading_deg != null ? (
+                  <p className="text-[10px] font-mono text-muted-foreground">
+                    Telemetry: {event.speed_mph != null ? `${event.speed_mph} mph` : ""}
+                    {event.speed_mph != null && event.heading_deg != null ? " · " : ""}
+                    {event.heading_deg != null ? `Heading ${event.heading_deg}°` : ""}
+                  </p>
+                ) : null}
+
                 {/* Unique Feature Tags */}
                 {event.unique_features && event.unique_features.length > 0 ? (
                   <div className="flex flex-wrap gap-1 pt-1">
@@ -485,6 +527,13 @@ function Events() {
                         #{feat.replace("_", " ")}
                       </span>
                     ))}
+                  </div>
+                ) : null}
+
+                {event.audio_alert_text ? (
+                  <div className="flex items-center gap-1.5 p-1.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[10px]">
+                    <Volume2 className="h-3 w-3 shrink-0 text-amber-400" />
+                    <span className="truncate">{event.audio_alert_text}</span>
                   </div>
                 ) : null}
 

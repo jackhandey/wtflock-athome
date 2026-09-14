@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Car, Glasses, Smartphone, Camera, Radio } from "lucide-react";
 import { toast } from "sonner";
 
 import { createCamera, deleteCamera, listCameras, updateCamera } from "@/lib/cameras.functions";
@@ -52,6 +52,7 @@ function Cameras() {
   const [latitude, setLatitude] = useState<string>("");
   const [longitude, setLongitude] = useState<string>("");
   const [facingDirection, setFacingDirection] = useState<string>("Ingress");
+  const [nodeType, setNodeType] = useState<"fixed" | "dashcam" | "wearable" | "mobile">("fixed");
 
   const cameras = useQuery({ queryKey: ["cameras"], queryFn: () => fetchCameras({}) });
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["cameras"] });
@@ -69,6 +70,7 @@ function Cameras() {
           latitude: latitude ? parseFloat(latitude) : null,
           longitude: longitude ? parseFloat(longitude) : null,
           facingDirection: facingDirection || "Ingress",
+          nodeType,
         },
       }),
     onSuccess: () => {
@@ -78,8 +80,9 @@ function Cameras() {
       setLatitude("");
       setLongitude("");
       setFacingDirection("Ingress");
+      setNodeType("fixed");
       invalidate();
-      toast.success("Camera added — re-download the bridge script from Settings");
+      toast.success("Camera node added — re-download the bridge script from Settings");
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -284,6 +287,25 @@ function Cameras() {
               onChange={(e) => setLongitude(e.target.value)}
             />
           </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Node Type</Label>
+            <Select
+              value={nodeType}
+              onValueChange={(val) =>
+                setNodeType(val as "fixed" | "dashcam" | "wearable" | "mobile")
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fixed">Fixed Camera (Porch / Mailbox)</SelectItem>
+                <SelectItem value="dashcam">Vehicle Dashcam (Axon Fleet Model)</SelectItem>
+                <SelectItem value="wearable">Wearable Smartglasses (POV Scanner)</SelectItem>
+                <SelectItem value="mobile">Smartphone Mount (Mobile Node)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <Label>Direction Vector</Label>
             <Select value={facingDirection} onValueChange={setFacingDirection}>
@@ -303,7 +325,7 @@ function Cameras() {
           <div className="flex items-end md:col-span-6 pt-2">
             <Button onClick={() => add.mutate()} disabled={!name || !url || add.isPending}>
               <Plus className="mr-1.5 h-4 w-4" />
-              Add camera with Map Location
+              Add surveillance node with Map Location
             </Button>
           </div>
         </CardContent>
@@ -315,6 +337,23 @@ function Cameras() {
             <CardContent className="flex flex-wrap items-center gap-4 pt-6">
               <div className="flex-1 space-y-1">
                 <div className="flex items-center gap-2 flex-wrap">
+                  {camera.node_type === "dashcam" ? (
+                    <span className="flex items-center gap-1 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30 px-2 py-0.5 text-xs font-semibold">
+                      <Car className="h-3.5 w-3.5" /> Dashcam (Axon Model)
+                    </span>
+                  ) : camera.node_type === "wearable" ? (
+                    <span className="flex items-center gap-1 rounded bg-purple-500/15 text-purple-400 border border-purple-500/30 px-2 py-0.5 text-xs font-semibold">
+                      <Glasses className="h-3.5 w-3.5" /> Smartglasses (POV)
+                    </span>
+                  ) : camera.node_type === "mobile" ? (
+                    <span className="flex items-center gap-1 rounded bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 px-2 py-0.5 text-xs font-semibold">
+                      <Smartphone className="h-3.5 w-3.5" /> Mobile Phone
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 rounded bg-muted text-muted-foreground px-2 py-0.5 text-xs font-semibold">
+                      <Camera className="h-3.5 w-3.5" /> Fixed
+                    </span>
+                  )}
                   <p className="font-medium">{camera.name}</p>
                   <span className="rounded bg-secondary px-2 py-0.5 text-xs font-mono">
                     {camera.facing_direction || "Ingress"}
@@ -322,10 +361,11 @@ function Cameras() {
                   {camera.latitude && camera.longitude ? (
                     <span className="rounded bg-primary/10 text-primary px-2 py-0.5 text-xs font-mono">
                       📍 {camera.latitude.toFixed(5)}, {camera.longitude.toFixed(5)}
+                      {camera.node_type !== "fixed" && " (Live GPS)"}
                     </span>
                   ) : (
                     <span className="rounded bg-destructive/10 text-destructive px-2 py-0.5 text-xs">
-                      No coordinates set (will default on map)
+                      {camera.node_type !== "fixed" ? "Awaiting GPS lock" : "No coordinates set"}
                     </span>
                   )}
                 </div>

@@ -89,7 +89,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "flock safety alternative, open source alpr, home alpr, diy flock camera, license plate reader, vehicle intelligence, frigate alpr, unifi protect alpr, visual bolo, casing alert, convoy tracking",
       },
-      { property: "og:title", content: "HomeWatch — Open-Source Flock Safety Alternative for Home Cameras" },
+      {
+        property: "og:title",
+        content: "HomeWatch — Open-Source Flock Safety Alternative for Home Cameras",
+      },
       {
         property: "og:description",
         content:
@@ -98,7 +101,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
 
-      { name: "twitter:title", content: "HomeWatch — Open-Source Flock Safety Alternative for Home Cameras" },
+      {
+        name: "twitter:title",
+        content: "HomeWatch — Open-Source Flock Safety Alternative for Home Cameras",
+      },
       {
         name: "twitter:description",
         content:

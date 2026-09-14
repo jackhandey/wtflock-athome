@@ -177,12 +177,22 @@ function MapView() {
         cameraCoordsMap.set(camera.id, pos);
         latLngs.push(pos);
 
-        // Custom HTML Marker for Camera
+        // Custom HTML Marker for Camera / Surveillance Node
+        const isMobileNode = camera.node_type && camera.node_type !== "fixed";
+        const nodeEmoji =
+          camera.node_type === "dashcam"
+            ? "🚗"
+            : camera.node_type === "wearable"
+              ? "👓"
+              : camera.node_type === "mobile"
+                ? "📱"
+                : "📷";
+
         const customIcon = L.divIcon({
           className: "custom-camera-pin",
           html: `<div style="
             background: #0f172a;
-            border: 2px solid ${camera.enabled ? "#22c55e" : "#64748b"};
+            border: 2px solid ${isMobileNode ? "#38bdf8" : camera.enabled ? "#22c55e" : "#64748b"};
             color: #f8fafc;
             padding: 4px 8px;
             border-radius: 8px;
@@ -194,7 +204,7 @@ function MapView() {
             align-items: center;
             gap: 4px;
           ">
-            <span>📷 ${escapeHtml(camera.name)}</span>
+            <span>${nodeEmoji} ${escapeHtml(camera.name)}</span>
             <span style="font-size: 9px; opacity: 0.7; background: #334155; padding: 1px 4px; border-radius: 4px;">
               ${escapeHtml(camera.facing_direction || "Ingress")}
             </span>
@@ -206,7 +216,8 @@ function MapView() {
         const marker = L.marker(pos, { icon: customIcon }).addTo(group);
         marker.bindPopup(`
           <div style="font-family: sans-serif; color: #0f172a;">
-            <strong>${escapeHtml(camera.name)}</strong><br/>
+            <strong>${nodeEmoji} ${escapeHtml(camera.name)}</strong><br/>
+            <small>Type: <strong>${escapeHtml(camera.node_type || "Fixed")}</strong></small><br/>
             <small>${escapeHtml(camera.location || "No description")}</small><br/>
             <small>Vector: <strong>${escapeHtml(camera.facing_direction || "Ingress")}</strong></small>
           </div>
@@ -218,20 +229,30 @@ function MapView() {
         const routePoints: [number, number][] = [];
 
         journeyEvents.forEach((event, index) => {
-          let pos = cameraCoordsMap.get(event.camera.id);
-          if (!pos && event.camera.latitude && event.camera.longitude) {
-            pos = [event.camera.latitude, event.camera.longitude];
-          }
+          const pos: [number, number] | undefined =
+            event.camera.latitude && event.camera.longitude
+              ? [event.camera.latitude, event.camera.longitude]
+              : cameraCoordsMap.get(event.camera.id);
+
           if (pos) {
             routePoints.push(pos);
 
             const isSelected = selectedEventIndex === index;
+            const eventNodeType = event.nodeType || "fixed";
+            const eventEmoji =
+              eventNodeType === "dashcam"
+                ? "🚗"
+                : eventNodeType === "wearable"
+                  ? "👓"
+                  : eventNodeType === "mobile"
+                    ? "📱"
+                    : "";
 
             // Journey Step Marker
             const stepIcon = L.divIcon({
               className: "journey-step-pin",
               html: `<div style="
-                background: ${isSelected ? "#ef4444" : "#3b82f6"};
+                background: ${isSelected ? "#ef4444" : eventNodeType !== "fixed" ? "#8b5cf6" : "#3b82f6"};
                 color: #ffffff;
                 border: 2px solid #ffffff;
                 width: 26px;
@@ -252,12 +273,22 @@ function MapView() {
               iconAnchor: [13, 13],
             });
 
+            const speedText =
+              event.speedMph != null
+                ? `<br/><small>Speed: <strong>${event.speedMph} mph</strong></small>`
+                : "";
+            const headingText =
+              event.headingDeg != null
+                ? `<small> · Heading: <strong>${event.headingDeg}°</strong></small>`
+                : "";
+
             const stepMarker = L.marker(pos, { icon: stepIcon }).addTo(group);
             stepMarker.bindPopup(`
-              <div style="font-family: sans-serif; color: #0f172a; max-width: 200px;">
-                <strong>Step ${index + 1}: ${escapeHtml(event.camera.name)}</strong><br/>
+              <div style="font-family: sans-serif; color: #0f172a; max-width: 220px;">
+                <strong>Step ${index + 1}: ${eventEmoji} ${escapeHtml(event.camera.name)}</strong><br/>
                 <small>Plate: <strong>${escapeHtml(event.plate_text)}</strong></small><br/>
                 <small>Time: ${escapeHtml(format(new Date(event.captured_at), "PP p"))}</small>
+                ${speedText}${headingText}
                 ${event.imageUrl ? `<img src="${encodeURI(event.imageUrl)}" alt="Evidence" style="width:100%; border-radius:4px; margin-top:4px;" />` : ""}
               </div>
             `);

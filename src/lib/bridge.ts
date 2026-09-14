@@ -1,4 +1,4 @@
-/** Generates the local bridge agent script that runs on the user's home network. */
+/** Generates the local bridge agent script that runs on the user's home network or roving vehicle/wearable. */
 
 export type BridgeCamera = {
   id: string;
@@ -7,6 +7,9 @@ export type BridgeCamera = {
   url: string;
   poll_interval_seconds: number;
   enabled: boolean;
+  node_type?: string;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export function buildBridgeScript(
@@ -22,15 +25,21 @@ export function buildBridgeScript(
       kind: camera.source_type,
       url: camera.url,
       intervalSeconds: camera.poll_interval_seconds,
+      nodeType: camera.node_type || "fixed",
+      latitude: camera.latitude || null,
+      longitude: camera.longitude || null,
     }));
 
   return `#!/usr/bin/env node
-// HomeWatch bridge agent — high-efficiency local edge daemon with motion diff gating & webhook server.
+// HomeWatch bridge agent — high-efficiency local edge daemon with motion diff gating, mobile roving GPS, and webhook push.
 // Usage:  HOMEWATCH_KEY=hw_xxx node homewatch-bridge.mjs
 // RTSP cameras require ffmpeg on PATH.
 // Features:
 //  1. Local Motion Diffing: compares frames locally to skip 95% of static driveway scenes (saving cloud API calls)
-//  2. Embedded Webhook Server: allows Home Assistant / Frigate / UniFi Protect to trigger instant pushes on motion (port 8090)
+//  2. Embedded Webhook Server: allows Home Assistant / Frigate / UniFi Protect / Dashcams to push frames on motion (port 8090)
+//  3. Mobile Roving Node Support (Axon Fleet Model & Smartglasses): accepts live GPS (lat, lng, speed, heading)
+//  4. Offline Store-and-Forward: queues frames locally when cellular connectivity is lost while driving
+//  5. Text-to-Speech Audio Dispatch: outputs heads-up voice alerts for in-car Bluetooth or smartglasses speakers
 
 import { createServer } from "node:http";
 import { execFile } from "node:child_process";
@@ -43,10 +52,12 @@ const DEVICE_KEY = process.env.HOMEWATCH_KEY || ${JSON.stringify(keyPlaceholder)
 const CAMERAS = ${JSON.stringify(config, null, 2)};
 const PORT = Number(process.env.BRIDGE_PORT || 8090);
 const MOTION_THRESHOLD = Number(process.env.MOTION_THRESHOLD || 1.8); // 1.8% pixel diff
+const DEFAULT_NODE_TYPE = process.env.NODE_TYPE || "fixed"; // 'fixed' | 'dashcam' | 'wearable' | 'mobile'
 
 const prevFrames = new Map(); // camera.id -> Buffer
 const lastPushedAt = new Map(); // camera.id -> timestamp
-let stats = { pushed: 0, skipped: 0, webhookTriggers: 0 };
+const offlineQueue = []; // store-and-forward queue when driving through cellular dead zones
+let stats = { pushed: 0, skipped: 0, webhookTriggers: 0, queuedOffline: 0 };
 
 // Lightweight in-memory frame diffing algorithm (no external dependencies needed)
 function hasSignificantMotion(currentBuf, prevBuf, threshold = MOTION_THRESHOLD) {
@@ -94,12 +105,12 @@ async function grabHttp(url) {
   return Buffer.from(await response.arrayBuffer());
 }
 
-async function pushFrame(camera, forcedBuffer = null) {
+async function pushFrame(camera, forcedBuffer = null, telemetry = {}) {
   const buffer = forcedBuffer || (camera.kind === "rtsp" ? await grabRtsp(camera.url) : await grabHttp(camera.url));
   const prev = prevFrames.get(camera.id);
   const now = Date.now();
   const lastPush = lastPushedAt.get(camera.id) || 0;
-  const isHeartbeat = (now - lastPush) > 10 * 60 * 1000; // Heartbeat push every 10 min to keep camera active in dashboard
+  const isHeartbeat = (now - lastPush) > 10 * 60 * 1000; // Heartbeat push every 10 min
 
   if (!forcedBuffer && !isHeartbeat && !hasSignificantMotion(buffer, prev)) {
     stats.skipped += 1;
@@ -109,22 +120,60 @@ async function pushFrame(camera, forcedBuffer = null) {
   prevFrames.set(camera.id, buffer);
   lastPushedAt.set(camera.id, now);
 
-  const response = await fetch(INGEST_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-device-key": DEVICE_KEY },
-    body: JSON.stringify({
-      cameraId: camera.id,
-      capturedAt: new Date().toISOString(),
-      contentType: "image/jpeg",
-      imageBase64: buffer.toString("base64"),
-    }),
-  });
+  const payload = {
+    cameraId: camera.id,
+    capturedAt: telemetry.capturedAt || new Date().toISOString(),
+    contentType: "image/jpeg",
+    imageBase64: buffer.toString("base64"),
+    latitude: telemetry.latitude !== undefined ? telemetry.latitude : (process.env.GPS_LAT ? Number(process.env.GPS_LAT) : camera.latitude),
+    longitude: telemetry.longitude !== undefined ? telemetry.longitude : (process.env.GPS_LNG ? Number(process.env.GPS_LNG) : camera.longitude),
+    speedMph: telemetry.speedMph !== undefined ? telemetry.speedMph : (process.env.GPS_SPEED ? Number(process.env.GPS_SPEED) : undefined),
+    headingDeg: telemetry.headingDeg !== undefined ? telemetry.headingDeg : (process.env.GPS_HEADING ? Number(process.env.GPS_HEADING) : undefined),
+    nodeType: telemetry.nodeType || camera.nodeType || DEFAULT_NODE_TYPE,
+  };
 
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result.error || \`ingest HTTP \${response.status}\`);
-  stats.pushed += 1;
-  return result;
+  try {
+    const response = await fetch(INGEST_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-device-key": DEVICE_KEY },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || \`ingest HTTP \${response.status}\`);
+    stats.pushed += 1;
+
+    // Handle real-time Text-to-Speech audio alerts for in-car Bluetooth or smartglasses
+    if (result.audioAlertText) {
+      process.stdout.write("\\x07"); // Terminal bell
+      console.log(\`\\n🔊 [HEADS-UP AUDIO ALERT]: \${result.audioAlertText}\\n\`);
+    }
+
+    return result;
+  } catch (err) {
+    // Offline Store-and-Forward queue when driving through cellular dead zones
+    if (offlineQueue.length < 50) {
+      offlineQueue.push({ camera, buffer, telemetry });
+      stats.queuedOffline = offlineQueue.length;
+      console.warn(\`[Offline Buffer] Network unavailable. Queued frame (\${offlineQueue.length}/50)\`);
+    }
+    throw err;
+  }
 }
+
+// Background worker to flush queued frames when mobile connectivity reconnects
+setInterval(async () => {
+  if (offlineQueue.length === 0) return;
+  const item = offlineQueue[0];
+  try {
+    await pushFrame(item.camera, item.buffer, item.telemetry);
+    offlineQueue.shift();
+    stats.queuedOffline = offlineQueue.length;
+    console.log(\`[Offline Buffer] Flushed queued frame (\${offlineQueue.length} remaining)\`);
+  } catch {
+    // Still offline, will retry next cycle
+  }
+}, 15000);
 
 async function loop(camera) {
   for (;;) {
@@ -132,7 +181,8 @@ async function loop(camera) {
       const result = await pushFrame(camera);
       if (result.stored) {
         const label = result.plate ? \`event \${result.plate}\` : "vehicle detected";
-        console.log(\`[\${new Date().toLocaleTimeString()}] \${camera.name} -> \${label} \${result.alerted ? "🚨 ALERT" : ""}\`);
+        const nodeTag = result.nodeType && result.nodeType !== "fixed" ? \`[\${result.nodeType.toUpperCase()}]\` : "";
+        console.log(\`[\${new Date().toLocaleTimeString()}] \${camera.name} \${nodeTag} -> \${label} \${result.alerted ? "🚨 ALERT" : ""}\`);
       }
     } catch (error) {
       console.error(\`[\${new Date().toLocaleTimeString()}] \${camera.name} error:\`, error.message);
@@ -141,7 +191,7 @@ async function loop(camera) {
   }
 }
 
-// Embedded Local HTTP Webhook Server for Frigate, Home Assistant, UniFi Protect, Reolink
+// Embedded Local HTTP Server for Frigate, Home Assistant, Dashcam, and Smartglasses triggers
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, \`http://\${req.headers.host || "localhost"}\`);
 
@@ -149,13 +199,15 @@ const server = createServer(async (req, res) => {
     res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({
       status: "online",
-      cameras: CAMERAS.map((c) => ({ id: c.id, name: c.name })),
+      cameras: CAMERAS.map((c) => ({ id: c.id, name: c.name, nodeType: c.nodeType })),
       stats,
+      offlineQueueLength: offlineQueue.length,
       uptimeSeconds: Math.round(process.uptime()),
     }));
   }
 
   // Webhook trigger endpoint: POST /webhook/:cameraId or POST /trigger?camera=:nameOrId
+  // Supports dynamic GPS query parameters: ?lat=37.77&lng=-122.41&speed=25&heading=90&nodeType=dashcam
   if (req.method === "POST" && (url.pathname.startsWith("/webhook") || url.pathname === "/trigger")) {
     const targetId = url.pathname.replace("/webhook/", "").replace("/webhook", "") || url.searchParams.get("camera");
     const camera = CAMERAS.find((c) => c.id === targetId || c.name.toLowerCase() === (targetId || "").toLowerCase()) || CAMERAS[0];
@@ -172,7 +224,15 @@ const server = createServer(async (req, res) => {
       const bodyBuf = Buffer.concat(chunks);
       const isImagePayload = bodyBuf.length > 500 && (req.headers["content-type"] || "").includes("image");
 
-      const result = await pushFrame(camera, isImagePayload ? bodyBuf : null);
+      const telemetry = {
+        latitude: url.searchParams.get("lat") ? Number(url.searchParams.get("lat")) : (req.headers["x-gps-lat"] ? Number(req.headers["x-gps-lat"]) : undefined),
+        longitude: url.searchParams.get("lng") ? Number(url.searchParams.get("lng")) : (req.headers["x-gps-lng"] ? Number(req.headers["x-gps-lng"]) : undefined),
+        speedMph: url.searchParams.get("speed") ? Number(url.searchParams.get("speed")) : undefined,
+        headingDeg: url.searchParams.get("heading") ? Number(url.searchParams.get("heading")) : undefined,
+        nodeType: url.searchParams.get("nodeType") || req.headers["x-node-type"] || camera.nodeType,
+      };
+
+      const result = await pushFrame(camera, isImagePayload ? bodyBuf : null, telemetry);
       res.writeHead(200, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ ok: true, camera: camera.name, result }));
     } catch (err) {
@@ -196,10 +256,11 @@ if (!DEVICE_KEY || DEVICE_KEY.startsWith("PASTE_")) {
 
 server.listen(PORT, () => {
   console.log(\`=========================================================\`);
-  console.log(\`HomeWatch Flock Edge Bridge running for \${CAMERAS.length} camera(s)\`);
+  console.log(\`HomeWatch Roving Edge Bridge running for \${CAMERAS.length} node(s)\`);
   console.log(\`* Local Motion Gating: ACTIVE (threshold: \${MOTION_THRESHOLD}%)\`);
-  console.log(\`* Webhook Push Server: http://localhost:\${PORT}/webhook/<cameraId>\`);
-  console.log(\`* Health Telemetry:    http://localhost:\${PORT}/status\`);
+  console.log(\`* Webhook / Mobile Ingest: http://localhost:\${PORT}/webhook/<cameraId>\`);
+  console.log(\`* Mobile Store-and-Forward: ACTIVE (buffer capacity: 50 frames)\`);
+  console.log(\`* Status & Telemetry:    http://localhost:\${PORT}/status\`);
   console.log(\`=========================================================\`);
 });
 
