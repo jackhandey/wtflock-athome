@@ -44,6 +44,7 @@ export function platesMatch(a: string, b: string): boolean {
   if (!a || !b) return false;
   if (a === b) return true;
   if (Math.abs(a.length - b.length) > 1) return false;
-  if (Math.min(a.length, b.length) < 4) return false;
+  // Short plates (< 5 chars) require exact match to avoid false alarms (e.g. 1234 vs 1235)
+  if (Math.min(a.length, b.length) < 5) return false;
   return editDistance(a, b) <= 1;
 }

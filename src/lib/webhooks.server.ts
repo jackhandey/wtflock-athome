@@ -12,14 +12,65 @@ export type AlertWebhookPayload = {
   imageUrl?: string | null;
 };
 
-export async function sendAlertWebhook(webhookUrl: string, data: AlertWebhookPayload): Promise<boolean> {
-  if (!webhookUrl || !webhookUrl.startsWith("http")) return false;
+export function isSafeWebhookUrl(urlStr: string): boolean {
+  try {
+    const parsed = new URL(urlStr);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
+
+    // Normalize hostname: lowercase and strip IPv6 enclosing brackets
+    const hostname = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    if (
+      hostname === "localhost" ||
+      hostname.endsWith(".localhost") ||
+      hostname === "127.0.0.1" ||
+      hostname === "::1" ||
+      hostname === "0.0.0.0" ||
+      hostname === "::"
+    ) {
+      return false;
+    }
+
+    // IPv6 link-local and unique-local
+    if (
+      hostname.startsWith("fe80:") ||
+      hostname.startsWith("fc00:") ||
+      hostname.startsWith("fd00:")
+    ) {
+      return false;
+    }
+
+    if (hostname === "169.254.169.254" || hostname.startsWith("169.254.")) {
+      return false;
+    }
+
+    const ipv4Match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (ipv4Match) {
+      const b0 = Number(ipv4Match[1]);
+      const b1 = Number(ipv4Match[2]);
+      if (b0 === 10) return false;
+      if (b0 === 192 && b1 === 168) return false;
+      if (b0 === 172 && b1 >= 16 && b1 <= 31) return false;
+      if (b0 === 127) return false;
+      if (b0 === 0) return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function sendAlertWebhook(
+  webhookUrl: string,
+  data: AlertWebhookPayload,
+): Promise<boolean> {
+  if (!webhookUrl || !isSafeWebhookUrl(webhookUrl)) return false;
 
   try {
     const isDiscord = webhookUrl.includes("discord.com/api/webhooks");
     const isSlack = webhookUrl.includes("hooks.slack.com");
 
-    let body: any;
+    let body: Record<string, unknown>;
 
     if (isDiscord) {
       body = {
@@ -69,6 +120,7 @@ export async function sendAlertWebhook(webhookUrl: string, data: AlertWebhookPay
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(10000),
     });
 
     return res.ok;

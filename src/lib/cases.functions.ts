@@ -33,7 +33,7 @@ export const listCases = createServerFn({ method: "GET" })
 
     if (error) throw new Error(error.message);
 
-    return (cases ?? []).map((c: any) => ({
+    return (cases ?? []).map((c) => ({
       id: c.id,
       case_number: c.case_number,
       title: c.title,
@@ -42,7 +42,7 @@ export const listCases = createServerFn({ method: "GET" })
       investigator_notes: c.investigator_notes,
       created_at: c.created_at,
       updated_at: c.updated_at,
-      event_count: c.case_events?.[0]?.count ?? 0,
+      event_count: (c.case_events as unknown as { count: number }[])?.[0]?.count ?? 0,
     })) as CaseRow[];
   });
 
@@ -73,7 +73,13 @@ export const updateCase = createServerFn({ method: "POST" })
     CaseInput.partial().extend({ id: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const patch: Record<string, any> = {};
+    const patch: {
+      case_number?: string;
+      title?: string;
+      status?: string;
+      description?: string | null;
+      investigator_notes?: string | null;
+    } = {};
     if (data.caseNumber !== undefined) patch.case_number = data.caseNumber;
     if (data.title !== undefined) patch.title = data.title;
     if (data.status !== undefined) patch.status = data.status;
@@ -114,34 +120,36 @@ export const getCaseDetails = createServerFn({ method: "POST" })
 
     if (eventsErr) throw new Error(eventsErr.message);
 
-    const paths = (caseEvents ?? []).map((ce: any) => ce.events?.image_path).filter(Boolean);
+    const paths = (caseEvents ?? [])
+      .map((ce) => ce.events?.image_path)
+      .filter((p): p is string => Boolean(p));
     const signed = paths.length
       ? await context.supabase.storage.from("snapshots").createSignedUrls(paths, 3600)
       : { data: [] as { signedUrl: string }[] };
 
     let urlIdx = 0;
-    const formattedEvents = (caseEvents ?? []).map((ce: any) => {
+    const formattedEvents = (caseEvents ?? []).map((ce) => {
       const ev = ce.events;
-      const imageUrl = ev?.image_path ? signed.data?.[urlIdx++]?.signedUrl ?? null : null;
+      const imageUrl = ev?.image_path ? (signed.data?.[urlIdx++]?.signedUrl ?? null) : null;
       return {
         case_event_id: ce.id,
         notes: ce.notes,
         added_at: ce.created_at,
         event: {
-          id: ev.id,
-          camera_id: ev.camera_id,
-          camera_name: ev.cameras?.name ?? "Unknown Camera",
-          captured_at: ev.captured_at,
-          plate_text: ev.plate_text,
-          plate_state: ev.plate_state,
-          plate_type: ev.plate_type,
-          vehicle_color: ev.vehicle_color,
-          vehicle_type: ev.vehicle_type,
-          vehicle_make: ev.vehicle_make,
-          vehicle_model: ev.vehicle_model,
-          vehicle_generation: ev.vehicle_generation,
-          unique_features: ev.unique_features ?? [],
-          summary: ev.summary,
+          id: ev?.id ?? "",
+          camera_id: ev?.camera_id ?? "",
+          camera_name: ev?.cameras?.name ?? "Unknown Camera",
+          captured_at: ev?.captured_at ?? "",
+          plate_text: ev?.plate_text ?? null,
+          plate_state: ev?.plate_state ?? null,
+          plate_type: ev?.plate_type ?? null,
+          vehicle_color: ev?.vehicle_color ?? null,
+          vehicle_type: ev?.vehicle_type ?? null,
+          vehicle_make: ev?.vehicle_make ?? null,
+          vehicle_model: ev?.vehicle_model ?? null,
+          vehicle_generation: ev?.vehicle_generation ?? null,
+          unique_features: ev?.unique_features ?? [],
+          summary: ev?.summary ?? null,
           imageUrl,
         },
       };
@@ -156,11 +164,13 @@ export const getCaseDetails = createServerFn({ method: "POST" })
 export const addEventToCase = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({
-      caseId: z.string().uuid(),
-      eventId: z.string().uuid(),
-      notes: z.string().max(500).optional(),
-    }).parse(input),
+    z
+      .object({
+        caseId: z.string().uuid(),
+        eventId: z.string().uuid(),
+        notes: z.string().max(500).optional(),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from("case_events").insert({
@@ -176,7 +186,10 @@ export const removeEventFromCase = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ caseEventId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("case_events").delete().eq("id", data.caseEventId);
+    const { error } = await context.supabase
+      .from("case_events")
+      .delete()
+      .eq("id", data.caseEventId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

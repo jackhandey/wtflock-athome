@@ -21,7 +21,10 @@ export const Route = createFileRoute("/auth")({
           "Sign in to HomeWatch to review plate reads, camera events and watchlist alerts from your own home cameras.",
       },
       { property: "og:title", content: "Sign in — HomeWatch" },
-      { property: "og:description", content: "Private plate reading and alerting for your home cameras." },
+      {
+        property: "og:description",
+        content: "Private plate reading and alerting for your home cameras.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -89,7 +92,9 @@ function AuthPage() {
         <Card className="border-border/80 bg-card/80 backdrop-blur">
           <CardHeader>
             <CardTitle>Operator sign in</CardTitle>
-            <CardDescription>Your cameras, events and watchlist stay private to you.</CardDescription>
+            <CardDescription>
+              Your cameras, events and watchlist stay private to you.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="signin">

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { AlertTriangle, Camera as CameraIcon, CircleDot, Users } from "lucide-react";
 
@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { listCameras } from "@/lib/cameras.functions";
 import { eventStats, latestPerCamera, listEvents } from "@/lib/events.functions";
 import { listAlerts } from "@/lib/alerts.functions";
+import { getSettings } from "@/lib/settings.functions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,8 +51,13 @@ function Dashboard() {
   const fetchEvents = useServerFn(listEvents);
   const fetchStats = useServerFn(eventStats);
   const fetchAlerts = useServerFn(listAlerts);
+  const fetchSettings = useServerFn(getSettings);
 
   const cameras = useQuery({ queryKey: ["cameras"], queryFn: () => fetchCameras({}) });
+  const settings = useQuery({ queryKey: ["settings"], queryFn: () => fetchSettings({}) });
+  const soundAlertsRef = useRef(true);
+  soundAlertsRef.current = settings.data?.sound_alerts_enabled !== false;
+
   const latest = useQuery({
     queryKey: ["latest-frames"],
     queryFn: () => fetchLatest({}),
@@ -84,13 +90,15 @@ function Dashboard() {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "alerts" }, (payload) => {
         queryClient.invalidateQueries({ queryKey: ["alerts"] });
 
-        // Trigger in-browser audio alarm siren
-        import("@/lib/audio-alarm").then(({ playAlertSirenSound }) => {
-          playAlertSirenSound();
-        });
+        // Trigger in-browser audio alarm siren if enabled in user settings
+        if (soundAlertsRef.current) {
+          import("@/lib/audio-alarm").then(({ playAlertSirenSound }) => {
+            playAlertSirenSound();
+          });
+        }
 
         // Trigger toast notification
-        const newPlate = (payload.new as any)?.plate || "HOTLIST VEHICLE";
+        const newPlate = (payload.new as { plate?: string })?.plate || "HOTLIST VEHICLE";
         toast.error(`🚨 HOTLIST ALERT: License plate ${newPlate} detected!`, {
           duration: 10000,
         });

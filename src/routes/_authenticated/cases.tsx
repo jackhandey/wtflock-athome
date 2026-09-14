@@ -50,7 +50,10 @@ export const Route = createFileRoute("/_authenticated/cases")({
           "Organize camera detections, vehicle evidence, and investigator notes into exportable case packages for police reports or insurance claims.",
       },
       { property: "og:title", content: "Investigative Case Management — HomeWatch" },
-      { property: "og:description", content: "Build incident folders and export evidence dossiers for law enforcement." },
+      {
+        property: "og:description",
+        content: "Build incident folders and export evidence dossiers for law enforcement.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -75,7 +78,9 @@ function CasesView() {
 
   // New Case Form
   const [newTitle, setNewTitle] = useState("");
-  const [newCaseNumber, setNewCaseNumber] = useState(`CASE-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
+  const [newCaseNumber, setNewCaseNumber] = useState(
+    `CASE-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+  );
   const [newDescription, setNewDescription] = useState("");
 
   // Event Attach Picker Search
@@ -85,7 +90,8 @@ function CasesView() {
 
   const activeCaseQuery = useQuery({
     queryKey: ["case", activeCaseId],
-    queryFn: () => (activeCaseId ? fetchCaseDetailsFn({ data: { id: activeCaseId } }) : Promise.resolve(null)),
+    queryFn: () =>
+      activeCaseId ? fetchCaseDetailsFn({ data: { id: activeCaseId } }) : Promise.resolve(null),
     enabled: Boolean(activeCaseId),
   });
 
@@ -118,7 +124,7 @@ function CasesView() {
           status: "Open",
         },
       }),
-    onSuccess: (created: any) => {
+    onSuccess: (created: { id: string }) => {
       setShowCreateModal(false);
       setNewTitle("");
       setNewDescription("");
@@ -184,7 +190,8 @@ function CasesView() {
         <div>
           <h1 className="text-2xl font-semibold">Investigative Case Management</h1>
           <p className="text-sm text-muted-foreground">
-            Package detections, notes, and vehicle evidence into incident dossiers for police reports or insurance claims.
+            Package detections, notes, and vehicle evidence into incident dossiers for police
+            reports or insurance claims.
           </p>
         </div>
         <Button onClick={() => setShowCreateModal(true)}>
@@ -209,7 +216,8 @@ function CasesView() {
             <CardContent className="p-3 space-y-2">
               {(casesQuery.data ?? []).length === 0 ? (
                 <p className="py-8 text-center text-xs text-muted-foreground">
-                  No cases created yet. Click "Create Incident Case" to start building an evidence package.
+                  No cases created yet. Click "Create Incident Case" to start building an evidence
+                  package.
                 </p>
               ) : (
                 (casesQuery.data ?? []).map((c) => {
@@ -225,14 +233,16 @@ function CasesView() {
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-mono text-xs font-bold text-primary">{c.case_number}</span>
+                        <span className="font-mono text-xs font-bold text-primary">
+                          {c.case_number}
+                        </span>
                         <Badge
                           variant={
                             c.status === "Submitted to Police"
                               ? "destructive"
                               : c.status === "Closed"
-                              ? "outline"
-                              : "default"
+                                ? "outline"
+                                : "default"
                           }
                           className="text-[10px]"
                         >
@@ -258,7 +268,10 @@ function CasesView() {
             <Card className="bg-card/40 border border-border/40">
               <CardContent className="py-16 text-center text-sm text-muted-foreground space-y-2">
                 <FileText className="h-10 w-10 mx-auto text-muted-foreground/50" />
-                <p>Select a case from the list to view evidence details, attach camera detections, or export a report.</p>
+                <p>
+                  Select a case from the list to view evidence details, attach camera detections, or
+                  export a report.
+                </p>
               </CardContent>
             </Card>
           ) : activeCaseQuery.isPending ? (
@@ -274,7 +287,9 @@ function CasesView() {
                 <CardHeader className="py-4 px-6 border-b border-border/50 flex flex-row items-center justify-between flex-wrap gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm font-bold text-primary">{activeCaseData.case_number}</span>
+                      <span className="font-mono text-sm font-bold text-primary">
+                        {activeCaseData.case_number}
+                      </span>
                       <Badge variant="outline">{activeCaseData.status}</Badge>
                     </div>
                     <h2 className="text-xl font-bold mt-1">{activeCaseData.title}</h2>
@@ -318,7 +333,9 @@ function CasesView() {
                           <SelectItem value="Open">Open Investigation</SelectItem>
                           <SelectItem value="Under Review">Under Review</SelectItem>
                           <SelectItem value="Submitted to Police">Submitted to Police</SelectItem>
-                          <SelectItem value="Insurance Claim Pending">Insurance Claim Pending</SelectItem>
+                          <SelectItem value="Insurance Claim Pending">
+                            Insurance Claim Pending
+                          </SelectItem>
                           <SelectItem value="Closed">Closed</SelectItem>
                         </SelectContent>
                       </Select>
@@ -333,19 +350,23 @@ function CasesView() {
 
                   {/* Investigator Notes */}
                   <div className="space-y-2 pt-2 border-t border-border/40">
-                    <Label htmlFor="notes" className="text-xs font-semibold">Investigator Notes & Narrative</Label>
+                    <Label htmlFor="notes" className="text-xs font-semibold">
+                      Investigator Notes & Narrative
+                    </Label>
                     <Textarea
                       id="notes"
                       rows={3}
                       placeholder="Enter investigation notes, officer names, incident report reference numbers..."
                       defaultValue={activeCaseData.investigator_notes || ""}
-                      onBlur={(e) =>
-                        handleUpdateStatus.mutate({
-                          id: activeCaseData.id,
-                          status: activeCaseData.status,
-                          notes: e.target.value,
-                        })
-                      }
+                      onBlur={(e) => {
+                        if (e.target.value !== (activeCaseData.investigator_notes ?? "")) {
+                          handleUpdateStatus.mutate({
+                            id: activeCaseData.id,
+                            status: activeCaseData.status,
+                            notes: e.target.value,
+                          });
+                        }
+                      }}
                       className="text-xs"
                     />
                   </div>
@@ -355,7 +376,7 @@ function CasesView() {
               {/* Evidence Items Section */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-base font-semibold flex items-center gap-2">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
                     <FileCheck className="h-4 w-4 text-primary" />
                     Attached Evidence ({attachedEvents.length})
                   </h3>
@@ -376,13 +397,20 @@ function CasesView() {
                   </Card>
                 ) : (
                   <div className="grid gap-4 sm:grid-cols-2">
-                    {attachedEvents.map((item: any, idx: number) => {
+                    {attachedEvents.map((item, idx: number) => {
                       const ev = item.event;
                       return (
-                        <Card key={item.case_event_id} className="overflow-hidden bg-card/70 border border-border/60">
+                        <Card
+                          key={item.case_event_id}
+                          className="overflow-hidden bg-card/70 border border-border/60"
+                        >
                           {ev.imageUrl ? (
                             <div className="relative aspect-video w-full bg-slate-950">
-                              <img src={ev.imageUrl} alt={ev.summary} className="h-full w-full object-cover" />
+                              <img
+                                src={ev.imageUrl}
+                                alt={ev.summary ?? ""}
+                                className="h-full w-full object-cover"
+                              />
                               <div className="absolute top-2 left-2 bg-primary text-primary-foreground font-mono text-[10px] font-bold px-1.5 py-0.5 rounded">
                                 Evidence #{idx + 1}
                               </div>
@@ -402,12 +430,17 @@ function CasesView() {
                               </Badge>
                             </div>
                             <p className="font-semibold text-foreground">
-                              {[ev.vehicle_color, ev.vehicle_make, ev.vehicle_model].filter(Boolean).join(" ") || "Detection"}
+                              {[ev.vehicle_color, ev.vehicle_make, ev.vehicle_model]
+                                .filter(Boolean)
+                                .join(" ") || "Detection"}
                             </p>
                             {ev.unique_features?.length > 0 ? (
                               <div className="flex flex-wrap gap-1">
                                 {ev.unique_features.map((f: string) => (
-                                  <span key={f} className="bg-primary/10 text-primary text-[10px] px-1 py-0.2 rounded">
+                                  <span
+                                    key={f}
+                                    className="bg-primary/10 text-primary text-[10px] px-1 py-0.2 rounded"
+                                  >
                                     #{f.replace("_", " ")}
                                   </span>
                                 ))}
@@ -439,17 +472,28 @@ function CasesView() {
                 <div className="grid gap-6 sm:grid-cols-2 text-xs">
                   <div className="space-y-4">
                     <p className="text-muted-foreground text-[11px]">
-                      I hereby certify that the evidence photos, license plate records, and camera timestamps attached to dossier <strong className="font-mono">{activeCaseData.case_number}</strong> were captured automatically by the HomeWatch camera security system.
+                      I hereby certify that the evidence photos, license plate records, and camera
+                      timestamps attached to dossier{" "}
+                      <strong className="font-mono">{activeCaseData.case_number}</strong> were
+                      captured automatically by the HomeWatch camera security system.
                     </p>
                     <div className="pt-4 border-b border-muted-foreground/40">
-                      <p className="text-[10px] text-muted-foreground">Reporting Resident / Security Officer Signature</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        Reporting Resident / Security Officer Signature
+                      </p>
                     </div>
                   </div>
                   <div className="space-y-4">
                     <div className="text-[11px] space-y-1 text-muted-foreground">
-                      <p><strong>System ID:</strong> HOMEWATCH-ALPR-SYS-1</p>
-                      <p><strong>Total Attached Detections:</strong> {attachedEvents.length}</p>
-                      <p><strong>Dossier Export Date:</strong> {format(new Date(), "PPP p")}</p>
+                      <p>
+                        <strong>System ID:</strong> HOMEWATCH-ALPR-SYS-1
+                      </p>
+                      <p>
+                        <strong>Total Attached Detections:</strong> {attachedEvents.length}
+                      </p>
+                      <p>
+                        <strong>Dossier Export Date:</strong> {format(new Date(), "PPP p")}
+                      </p>
                     </div>
                     <div className="pt-4 border-b border-muted-foreground/40">
                       <p className="text-[10px] text-muted-foreground">Date Signed</p>
@@ -507,7 +551,10 @@ function CasesView() {
                 <Button variant="outline" onClick={() => setShowCreateModal(false)}>
                   Cancel
                 </Button>
-                <Button onClick={() => handleCreateCase.mutate()} disabled={!newTitle || handleCreateCase.isPending}>
+                <Button
+                  onClick={() => handleCreateCase.mutate()}
+                  disabled={!newTitle || handleCreateCase.isPending}
+                >
                   Create Folder
                 </Button>
               </div>
@@ -521,7 +568,9 @@ function CasesView() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
           <Card className="w-full max-w-2xl bg-card border border-border shadow-2xl max-h-[85vh] flex flex-col">
             <CardHeader className="py-4 px-6 border-b border-border flex flex-row items-center justify-between">
-              <CardTitle className="text-base font-semibold">Attach Camera Evidence Event</CardTitle>
+              <CardTitle className="text-base font-semibold">
+                Attach Camera Evidence Event
+              </CardTitle>
               <Button variant="ghost" size="icon" onClick={() => setShowAttachModal(false)}>
                 <X className="h-4 w-4" />
               </Button>
@@ -542,7 +591,11 @@ function CasesView() {
                   >
                     <div>
                       {ev.imageUrl ? (
-                        <img src={ev.imageUrl} alt={ev.summary} className="aspect-video w-full rounded object-cover mb-2" />
+                        <img
+                          src={ev.imageUrl}
+                          alt={ev.summary ?? ""}
+                          className="aspect-video w-full rounded object-cover mb-2"
+                        />
                       ) : null}
                       <div className="flex items-center justify-between gap-1 mb-1">
                         <span className="plate rounded bg-secondary px-1.5 py-0.5 text-[11px]">
@@ -551,7 +604,9 @@ function CasesView() {
                         <span className="text-[10px] text-muted-foreground">{ev.camera_name}</span>
                       </div>
                       <p className="text-[11px] font-semibold">
-                        {[ev.vehicle_color, ev.vehicle_make, ev.vehicle_model].filter(Boolean).join(" ")}
+                        {[ev.vehicle_color, ev.vehicle_make, ev.vehicle_model]
+                          .filter(Boolean)
+                          .join(" ")}
                       </p>
                       <p className="text-[10px] text-muted-foreground line-clamp-1">{ev.summary}</p>
                     </div>

@@ -13,7 +13,6 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -82,20 +81,34 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "HomeWatch — Plate Reading for Your Own Cameras" },
       {
         name: "description",
-        content: "Home Flock enables home camera system integration with Flock's security features.",
+        content:
+          "Home Flock enables home camera system integration with Flock's security features.",
       },
       { property: "og:title", content: "HomeWatch — Plate Reading for Your Own Cameras" },
       {
         property: "og:description",
-        content: "Home Flock enables home camera system integration with Flock's security features.",
+        content:
+          "Home Flock enables home camera system integration with Flock's security features.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
 
       { name: "twitter:title", content: "HomeWatch — Plate Reading for Your Own Cameras" },
-      { name: "twitter:description", content: "Home Flock enables home camera system integration with Flock's security features." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/66ba6a8a53a2178451ccce948f51b337/id-preview-5c2adc59--4420fa8a-5e6d-420e-974f-b77517602372.lovable.app-1786639704582.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/66ba6a8a53a2178451ccce948f51b337/id-preview-5c2adc59--4420fa8a-5e6d-420e-974f-b77517602372.lovable.app-1786639704582.png" },
+      {
+        name: "twitter:description",
+        content:
+          "Home Flock enables home camera system integration with Flock's security features.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/66ba6a8a53a2178451ccce948f51b337/id-preview-5c2adc59--4420fa8a-5e6d-420e-974f-b77517602372.lovable.app-1786639704582.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/66ba6a8a53a2178451ccce948f51b337/id-preview-5c2adc59--4420fa8a-5e6d-420e-974f-b77517602372.lovable.app-1786639704582.png",
+      },
     ],
     links: [
       {
@@ -133,7 +146,6 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <Toaster richColors position="top-right" />
-
     </QueryClientProvider>
   );
 }

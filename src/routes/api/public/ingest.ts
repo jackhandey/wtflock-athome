@@ -3,19 +3,20 @@ import { createHash } from "crypto";
 import { z } from "zod";
 
 import { normalizePlate, platesMatch } from "@/lib/plates";
+import { checkRateLimit } from "@/lib/rate-limit.server";
 import { detectFromImage } from "@/lib/vision.server";
 
 const BodySchema = z.object({
   cameraId: z.string().uuid(),
   capturedAt: z.string().optional(),
-  contentType: z.string().default("image/jpeg"),
-  imageBase64: z.string().min(100),
+  contentType: z.enum(["image/jpeg", "image/png", "image/webp"]).default("image/jpeg"),
+  imageBase64: z.string().min(100).max(10_000_000),
 });
 
-function json(body: unknown, status = 200) {
+function json(body: unknown, status = 200, headers: Record<string, string> = {}) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...headers },
   });
 }
 
@@ -43,11 +44,29 @@ export const Route = createFileRoute("/api/public/ingest")({
           .maybeSingle();
 
         if (!deviceKey || deviceKey.revoked) return json({ error: "Invalid device key" }, 401);
+
+        const rateLimit = checkRateLimit(`device:${deviceKey.id}`, 60, 60_000);
+        if (!rateLimit.success) {
+          const retryAfter = Math.ceil(rateLimit.resetInMs / 1000);
+          return json(
+            {
+              error: "Rate limit exceeded. Maximum 60 requests per minute.",
+              retryAfterSeconds: retryAfter,
+            },
+            429,
+            {
+              "Retry-After": String(retryAfter),
+              "X-RateLimit-Limit": String(rateLimit.limit),
+              "X-RateLimit-Remaining": "0",
+            },
+          );
+        }
+
         const userId = deviceKey.user_id;
 
         const { data: camera } = await supabaseAdmin
           .from("cameras")
-          .select("id, user_id, enabled")
+          .select("id, user_id, enabled, name")
           .eq("id", parsed.cameraId)
           .maybeSingle();
 

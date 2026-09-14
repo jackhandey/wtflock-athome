@@ -54,8 +54,7 @@ function WatchlistPage() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["watchlist"] });
 
   const create = useMutation({
-    mutationFn: () =>
-      add({ data: { plate, label: label || null, reason, notes: notes || null } }),
+    mutationFn: () => add({ data: { plate, label: label || null, reason, notes: notes || null } }),
     onSuccess: () => {
       setPlate("");
       setLabel("");

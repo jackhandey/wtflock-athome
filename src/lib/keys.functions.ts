@@ -8,7 +8,6 @@ async function hashKey(raw: string): Promise<string> {
   return createHash("sha256").update(raw).digest("hex");
 }
 
-
 export const listDeviceKeys = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

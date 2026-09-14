@@ -12,14 +12,16 @@ export const getSettings = createServerFn({ method: "GET" })
       .eq("user_id", context.userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return data ?? {
-      user_id: context.userId,
-      retention_days: 30,
-      alert_email: null,
-      webhook_url: null,
-      webhook_enabled: true,
-      sound_alerts_enabled: true,
-    };
+    return (
+      data ?? {
+        user_id: context.userId,
+        retention_days: 30,
+        alert_email: null,
+        webhook_url: null,
+        webhook_enabled: true,
+        sound_alerts_enabled: true,
+      }
+    );
   });
 
 export const saveSettings = createServerFn({ method: "POST" })

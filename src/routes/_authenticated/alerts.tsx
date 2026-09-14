@@ -21,7 +21,10 @@ export const Route = createFileRoute("/_authenticated/alerts")({
           "Review and acknowledge alerts triggered when a watchlisted plate is seen by one of your cameras.",
       },
       { property: "og:title", content: "Watchlist alerts — HomeWatch" },
-      { property: "og:description", content: "Alerts for watchlisted plates seen on your cameras." },
+      {
+        property: "og:description",
+        content: "Alerts for watchlisted plates seen on your cameras.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { Map as LeafletMap, LayerGroup } from "leaflet";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   ArrowRight,
@@ -24,6 +25,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import "leaflet/dist/leaflet.css";
+
 export const Route = createFileRoute("/_authenticated/map")({
   head: () => ({
     meta: [
@@ -34,13 +37,26 @@ export const Route = createFileRoute("/_authenticated/map")({
           "Interactive camera location map and chronological vehicle journey route tracking across cameras.",
       },
       { property: "og:title", content: "GIS Map & Vehicle Journey — HomeWatch" },
-      { property: "og:description", content: "Trace vehicle paths across home cameras on an interactive map." },
+      {
+        property: "og:description",
+        content: "Trace vehicle paths across home cameras on an interactive map.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: MapView,
 });
+
+function escapeHtml(str: string | null | undefined): string {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 // Default center (San Francisco / suburban fallback if no camera coordinates set)
 const DEFAULT_CENTER: [number, number] = [37.7749, -122.4194];
@@ -54,10 +70,11 @@ function MapView() {
   const [activePlate, setActivePlate] = useState<string | null>(null);
   const [selectedEventIndex, setSelectedEventIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const layerGroupRef = useRef<any>(null);
+  const mapInstanceRef = useRef<LeafletMap | null>(null);
+  const layerGroupRef = useRef<LayerGroup | null>(null);
 
   const camerasQuery = useQuery({ queryKey: ["cameras"], queryFn: () => fetchCameras({}) });
   const recentEventsQuery = useQuery({
@@ -67,7 +84,10 @@ function MapView() {
 
   const journeyQuery = useQuery({
     queryKey: ["journey", activePlate],
-    queryFn: () => (activePlate ? fetchJourney({ data: { plate: activePlate } }) : Promise.resolve({ events: [] })),
+    queryFn: () =>
+      activePlate
+        ? fetchJourney({ data: { plate: activePlate } })
+        : Promise.resolve({ events: [] }),
     enabled: Boolean(activePlate),
   });
 
@@ -76,23 +96,14 @@ function MapView() {
     new Set((recentEventsQuery.data ?? []).map((e) => e.plate_text).filter(Boolean)),
   ).slice(0, 8);
 
-  const journeyEvents = journeyQuery.data?.events ?? [];
+  const journeyEvents = useMemo(() => journeyQuery.data?.events ?? [], [journeyQuery.data?.events]);
 
   // Initialize Leaflet Map
   useEffect(() => {
-    let leafletMap: any = null;
+    let leafletMap: LeafletMap | null = null;
 
     async function initMap() {
       if (!mapContainerRef.current) return;
-
-      // Load Leaflet CSS dynamically if not present
-      if (!document.getElementById("leaflet-css")) {
-        const link = document.createElement("link");
-        link.id = "leaflet-css";
-        link.rel = "stylesheet";
-        link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-        document.head.appendChild(link);
-      }
 
       // Import leaflet dynamically
       const L = await import("leaflet");
@@ -114,11 +125,13 @@ function MapView() {
 
       layerGroupRef.current = L.layerGroup().addTo(leafletMap);
       mapInstanceRef.current = leafletMap;
+      setMapReady(true);
     }
 
     initMap();
 
     return () => {
+      setMapReady(false);
       if (leafletMap) leafletMap.remove();
     };
   }, []);
@@ -128,7 +141,10 @@ function MapView() {
     if (!mapInstanceRef.current || !layerGroupRef.current) return;
 
     import("leaflet").then((L) => {
+      const map = mapInstanceRef.current;
       const group = layerGroupRef.current;
+      if (!map || !group) return;
+
       group.clearLayers();
 
       const cameras = camerasQuery.data ?? [];
@@ -168,9 +184,9 @@ function MapView() {
             align-items: center;
             gap: 4px;
           ">
-            <span>📷 ${camera.name}</span>
+            <span>📷 ${escapeHtml(camera.name)}</span>
             <span style="font-size: 9px; opacity: 0.7; background: #334155; padding: 1px 4px; border-radius: 4px;">
-              ${camera.facing_direction || "Ingress"}
+              ${escapeHtml(camera.facing_direction || "Ingress")}
             </span>
           </div>`,
           iconSize: [120, 30],
@@ -180,9 +196,9 @@ function MapView() {
         const marker = L.marker(pos, { icon: customIcon }).addTo(group);
         marker.bindPopup(`
           <div style="font-family: sans-serif; color: #0f172a;">
-            <strong>${camera.name}</strong><br/>
-            <small>${camera.location || "No description"}</small><br/>
-            <small>Vector: <strong>${camera.facing_direction || "Ingress"}</strong></small>
+            <strong>${escapeHtml(camera.name)}</strong><br/>
+            <small>${escapeHtml(camera.location || "No description")}</small><br/>
+            <small>Vector: <strong>${escapeHtml(camera.facing_direction || "Ingress")}</strong></small>
           </div>
         `);
       });
@@ -229,10 +245,10 @@ function MapView() {
             const stepMarker = L.marker(pos, { icon: stepIcon }).addTo(group);
             stepMarker.bindPopup(`
               <div style="font-family: sans-serif; color: #0f172a; max-width: 200px;">
-                <strong>Step ${index + 1}: ${event.camera.name}</strong><br/>
-                <small>Plate: <strong>${event.plate_text}</strong></small><br/>
-                <small>Time: ${format(new Date(event.captured_at), "PP p")}</small>
-                ${event.imageUrl ? `<img src="${event.imageUrl}" style="width:100%; border-radius:4px; margin-top:4px;" />` : ""}
+                <strong>Step ${index + 1}: ${escapeHtml(event.camera.name)}</strong><br/>
+                <small>Plate: <strong>${escapeHtml(event.plate_text)}</strong></small><br/>
+                <small>Time: ${escapeHtml(format(new Date(event.captured_at), "PP p"))}</small>
+                ${event.imageUrl ? `<img src="${encodeURI(event.imageUrl)}" alt="Evidence" style="width:100%; border-radius:4px; margin-top:4px;" />` : ""}
               </div>
             `);
           }
@@ -247,20 +263,20 @@ function MapView() {
             dashArray: "8, 8",
           }).addTo(group);
 
-          mapInstanceRef.current.fitBounds(polyline.getBounds(), { padding: [50, 50] });
-        } else if (routePoints.length === 1) {
-          mapInstanceRef.current.setView(routePoints[0], 16);
+          map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+        } else if (routePoints.length === 1 && routePoints[0]) {
+          map.setView(routePoints[0], 16);
         }
       } else if (latLngs.length > 0) {
         const bounds = L.latLngBounds(latLngs);
-        mapInstanceRef.current.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 });
+        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 });
       }
     });
-  }, [camerasQuery.data, journeyEvents, selectedEventIndex]);
+  }, [mapReady, camerasQuery.data, journeyEvents, selectedEventIndex]);
 
   // Journey Replay Animation Loop
   useEffect(() => {
-    let interval: any = null;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (isPlaying && journeyEvents.length > 0) {
       interval = setInterval(() => {
         setSelectedEventIndex((prev) => {
@@ -298,7 +314,8 @@ function MapView() {
         <div>
           <h1 className="text-2xl font-semibold">GIS Map & Vehicle Journey</h1>
           <p className="text-sm text-muted-foreground">
-            Track vehicle movements chronologically across home cameras with directional vectors and time deltas.
+            Track vehicle movements chronologically across home cameras with directional vectors and
+            time deltas.
           </p>
         </div>
       </div>
@@ -415,7 +432,8 @@ function MapView() {
                     </Button>
                   </div>
                   <div className="text-xs text-muted-foreground font-mono">
-                    Step {selectedEventIndex !== null ? selectedEventIndex + 1 : 1} of {journeyEvents.length}
+                    Step {selectedEventIndex !== null ? selectedEventIndex + 1 : 1} of{" "}
+                    {journeyEvents.length}
                   </div>
                 </div>
               ) : null}
@@ -438,14 +456,22 @@ function MapView() {
               {!activePlate ? (
                 <div className="py-8 text-center text-sm text-muted-foreground space-y-2">
                   <Compass className="h-8 w-8 mx-auto text-muted-foreground/60" />
-                  <p>Enter a license plate or select a recent detection to reconstruct its route across your home cameras.</p>
+                  <p>
+                    Enter a license plate or select a recent detection to reconstruct its route
+                    across your home cameras.
+                  </p>
                 </div>
               ) : journeyQuery.isPending ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">Tracing journey across cameras...</p>
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  Tracing journey across cameras...
+                </p>
               ) : journeyEvents.length === 0 ? (
                 <div className="py-8 text-center text-sm text-muted-foreground space-y-2">
                   <ShieldAlert className="h-8 w-8 mx-auto text-muted-foreground/60" />
-                  <p>No detection history found for plate <span className="plate">{activePlate}</span>.</p>
+                  <p>
+                    No detection history found for plate{" "}
+                    <span className="plate">{activePlate}</span>.
+                  </p>
                 </div>
               ) : (
                 <div className="relative space-y-4 before:absolute before:left-3.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-border/70">

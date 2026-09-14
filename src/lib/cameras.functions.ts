@@ -71,7 +71,8 @@ export const updateCamera = createServerFn({ method: "POST" })
     if (data.location !== undefined) patch.location = data.location;
     if (data.sourceType !== undefined) patch.source_type = data.sourceType;
     if (data.url !== undefined) patch.url = data.url;
-    if (data.pollIntervalSeconds !== undefined) patch.poll_interval_seconds = data.pollIntervalSeconds;
+    if (data.pollIntervalSeconds !== undefined)
+      patch.poll_interval_seconds = data.pollIntervalSeconds;
     if (data.enabled !== undefined) patch.enabled = data.enabled;
     if (data.latitude !== undefined) patch.latitude = data.latitude;
     if (data.longitude !== undefined) patch.longitude = data.longitude;

@@ -75,9 +75,10 @@ export const listEvents = createServerFn({ method: "POST" })
     }
 
     if (data.naturalQuery) {
-      const nq = data.naturalQuery.trim();
+      const sanitized = data.naturalQuery.trim().replace(/[(),]/g, " ").replace(/\s+/g, " ");
+      const pattern = `"%${sanitized}%"`;
       query = query.or(
-        `summary.ilike.%${nq}%,vehicle_color.ilike.%${nq}%,vehicle_make.ilike.%${nq}%,vehicle_model.ilike.%${nq}%,plate_text.ilike.%${nq}%`,
+        `summary.ilike.${pattern},vehicle_color.ilike.${pattern},vehicle_make.ilike.${pattern},vehicle_model.ilike.${pattern},plate_text.ilike.${pattern}`,
       );
     }
 
@@ -97,14 +98,14 @@ export const listEvents = createServerFn({ method: "POST" })
       image_path: row.image_path,
       plate_text: row.plate_text,
       plate_confidence: row.plate_confidence,
-      plate_state: (row as any).plate_state ?? null,
-      plate_type: (row as any).plate_type ?? null,
+      plate_state: row.plate_state ?? null,
+      plate_type: row.plate_type ?? null,
       vehicle_color: row.vehicle_color,
       vehicle_type: row.vehicle_type,
       vehicle_make: row.vehicle_make,
-      vehicle_model: (row as any).vehicle_model ?? null,
-      vehicle_generation: (row as any).vehicle_generation ?? null,
-      unique_features: (row as any).unique_features ?? [],
+      vehicle_model: row.vehicle_model ?? null,
+      vehicle_generation: row.vehicle_generation ?? null,
+      unique_features: row.unique_features ?? [],
       vehicle_count: row.vehicle_count,
       person_count: row.person_count,
       summary: row.summary,
@@ -128,12 +129,10 @@ export const latestPerCamera = createServerFn({ method: "GET" })
     }
     const entries = Array.from(newest.values());
     const signed = entries.length
-      ? await context.supabase.storage
-          .from("snapshots")
-          .createSignedUrls(
-            entries.map((entry) => entry.image_path),
-            3600,
-          )
+      ? await context.supabase.storage.from("snapshots").createSignedUrls(
+          entries.map((entry) => entry.image_path),
+          3600,
+        )
       : { data: [] as { signedUrl: string }[] };
 
     return entries.map((entry, index) => ({
@@ -214,7 +213,7 @@ export const getVehicleJourney = createServerFn({ method: "POST" })
       : { data: [] as { signedUrl: string }[] };
 
     const formattedEvents = (events ?? []).map((row, index) => {
-      const cameraObj = (row as { cameras?: { id: string; name: string; latitude: number | null; longitude: number | null; facing_direction: string | null; location: string | null } | null }).cameras;
+      const cameraObj = row.cameras;
       return {
         id: row.id,
         captured_at: row.captured_at,

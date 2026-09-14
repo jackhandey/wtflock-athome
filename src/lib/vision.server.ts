@@ -87,8 +87,11 @@ const EMPTY: Detection = {
   summary: "Nothing detected",
 };
 
-function extractJson(text: string): GatewayResult | null {
-  const trimmed = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "");
+export function extractJson(text: string): GatewayResult | null {
+  const trimmed = text
+    .trim()
+    .replace(/^```(?:json)?/i, "")
+    .replace(/```$/, "");
   const start = trimmed.indexOf("{");
   const end = trimmed.lastIndexOf("}");
   if (start === -1 || end === -1) return null;
@@ -149,7 +152,11 @@ export async function detectFromImage(imageDataUrl: string): Promise<Detection> 
     .slice()
     .sort((a, b) => Number(b.plate_confidence ?? 0) - Number(a.plate_confidence ?? 0))[0];
 
-  const plateText = best?.plate ? String(best.plate).toUpperCase().replace(/[^A-Z0-9]/g, "") : null;
+  const plateText = best?.plate
+    ? String(best.plate)
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "")
+    : null;
 
   return {
     interesting: vehicles.length > 0 || personCount > 0,

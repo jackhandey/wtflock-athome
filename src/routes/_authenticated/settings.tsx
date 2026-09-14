@@ -7,7 +7,12 @@ import { toast } from "sonner";
 
 import { listCameras } from "@/lib/cameras.functions";
 import { createDeviceKey, listDeviceKeys, revokeDeviceKey } from "@/lib/keys.functions";
-import { getSettings, purgeOldSnapshots, saveSettings, testWebhook } from "@/lib/settings.functions";
+import {
+  getSettings,
+  purgeOldSnapshots,
+  saveSettings,
+  testWebhook,
+} from "@/lib/settings.functions";
 import { buildBridgeScript } from "@/lib/bridge";
 import { playAlertSirenSound } from "@/lib/audio-alarm";
 import { Badge } from "@/components/ui/badge";
@@ -141,7 +146,8 @@ function SettingsPage() {
       <div>
         <h1 className="text-2xl font-semibold">Settings & Setup Guide</h1>
         <p className="text-sm text-muted-foreground">
-          Configure bridge security keys, camera streams, multi-channel alert webhooks, and retention rules.
+          Configure bridge security keys, camera streams, multi-channel alert webhooks, and
+          retention rules.
         </p>
       </div>
 
@@ -152,38 +158,48 @@ function SettingsPage() {
             🚀 How to Connect Your Home Cameras (3-Step Setup)
           </CardTitle>
           <CardDescription>
-            HomeWatch uses a lightweight local bridge script so your camera stream credentials never leave your home network.
+            HomeWatch uses a lightweight local bridge script so your camera stream credentials never
+            leave your home network.
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-4 space-y-4 text-xs">
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-1.5 p-3 rounded-lg border border-border/60 bg-background/60">
               <div className="flex items-center gap-2 font-bold text-foreground">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px]">1</span>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px]">
+                  1
+                </span>
                 Add Camera Streams
               </div>
               <p className="text-muted-foreground">
-                Go to the <strong className="text-foreground">Cameras</strong> tab and add your RTSP or HTTP snapshot URLs and GIS map coordinates.
+                Go to the <strong className="text-foreground">Cameras</strong> tab and add your RTSP
+                or HTTP snapshot URLs and GIS map coordinates.
               </p>
             </div>
 
             <div className="space-y-1.5 p-3 rounded-lg border border-border/60 bg-background/60">
               <div className="flex items-center gap-2 font-bold text-foreground">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px]">2</span>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px]">
+                  2
+                </span>
                 Issue Security Key
               </div>
               <p className="text-muted-foreground">
-                Click <strong className="text-foreground">Issue Key</strong> below and copy your private device authentication key.
+                Click <strong className="text-foreground">Issue Key</strong> below and copy your
+                private device authentication key.
               </p>
             </div>
 
             <div className="space-y-1.5 p-3 rounded-lg border border-border/60 bg-background/60">
               <div className="flex items-center gap-2 font-bold text-foreground">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px]">3</span>
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px]">
+                  3
+                </span>
                 Run Local Bridge Agent
               </div>
               <p className="text-muted-foreground">
-                Download the bridge script and run it on any PC, Mac, Raspberry Pi, or server on your local home network.
+                Download the bridge script and run it on any PC, Mac, Raspberry Pi, or server on
+                your local home network.
               </p>
             </div>
           </div>
@@ -193,13 +209,20 @@ function SettingsPage() {
               ⚡ Pro-Tip: Motion Triggers vs. Continuous Polling (Cuts Costs by 95%)
             </span>
             <p className="text-amber-200/80 text-[11px]">
-              Instead of fetching 1 frame every 10 seconds 24/7, configure your camera's ONVIF/RTSP motion sensor or Home Assistant to push frames <strong>only when a vehicle enters the frame</strong>. This cuts AI API costs by 95% and captures fast-moving vehicles the exact second they arrive!
+              Instead of fetching 1 frame every 10 seconds 24/7, configure your camera's ONVIF/RTSP
+              motion sensor or Home Assistant to push frames{" "}
+              <strong>only when a vehicle enters the frame</strong>. This cuts AI API costs by 95%
+              and captures fast-moving vehicles the exact second they arrive!
             </p>
           </div>
 
           <div className="rounded-md bg-slate-950 p-3 font-mono text-[11px] text-slate-200 border border-slate-800 space-y-1">
-            <p className="text-slate-400"># Run this in your terminal on any computer on your home network:</p>
-            <p className="text-emerald-400">HOMEWATCH_KEY=your_key_here node homewatch-bridge.mjs</p>
+            <p className="text-slate-400">
+              # Run this in your terminal on any computer on your home network:
+            </p>
+            <p className="text-emerald-400">
+              HOMEWATCH_KEY=your_key_here node homewatch-bridge.mjs
+            </p>
             <p className="text-slate-500 text-[10px] pt-1">
               * Requires Node.js v18+. RTSP streams require `ffmpeg` installed on system PATH.
             </p>
@@ -215,13 +238,16 @@ function SettingsPage() {
             Instant Multi-Channel Alerts & Siren Chimes
           </CardTitle>
           <CardDescription>
-            Dispatch real-time hotlist alerts to Discord, Slack, Ntfy, Home Assistant, or Pushover, and enable in-browser siren chimes.
+            Dispatch real-time hotlist alerts to Discord, Slack, Ntfy, Home Assistant, or Pushover,
+            and enable in-browser siren chimes.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="webhookUrl">Webhook URL (Discord / Slack / Home Assistant / Ntfy)</Label>
+              <Label htmlFor="webhookUrl">
+                Webhook URL (Discord / Slack / Home Assistant / Ntfy)
+              </Label>
               <div className="flex gap-2">
                 <Input
                   id="webhookUrl"
@@ -240,18 +266,30 @@ function SettingsPage() {
                 </Button>
               </div>
               <div className="flex flex-wrap gap-1.5 pt-1">
-                <Badge variant="secondary" className="text-[10px]">Discord</Badge>
-                <Badge variant="secondary" className="text-[10px]">Slack</Badge>
-                <Badge variant="secondary" className="text-[10px]">Home Assistant</Badge>
-                <Badge variant="secondary" className="text-[10px]">Ntfy.sh</Badge>
-                <Badge variant="secondary" className="text-[10px]">Generic JSON POST</Badge>
+                <Badge variant="secondary" className="text-[10px]">
+                  Discord
+                </Badge>
+                <Badge variant="secondary" className="text-[10px]">
+                  Slack
+                </Badge>
+                <Badge variant="secondary" className="text-[10px]">
+                  Home Assistant
+                </Badge>
+                <Badge variant="secondary" className="text-[10px]">
+                  Ntfy.sh
+                </Badge>
+                <Badge variant="secondary" className="text-[10px]">
+                  Generic JSON POST
+                </Badge>
               </div>
             </div>
 
             <div className="flex items-center justify-between rounded-lg border border-border/60 p-3">
               <div className="space-y-0.5">
                 <Label className="text-xs font-semibold">Enable Webhook Dispatch</Label>
-                <p className="text-[11px] text-muted-foreground">Post rich alerts when hotlist plates hit.</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Post rich alerts when hotlist plates hit.
+                </p>
               </div>
               <Switch checked={webhookEnabled} onCheckedChange={setWebhookEnabled} />
             </div>
@@ -259,10 +297,17 @@ function SettingsPage() {
             <div className="flex items-center justify-between rounded-lg border border-border/60 p-3">
               <div className="space-y-0.5">
                 <Label className="text-xs font-semibold">In-Browser Sound Chime</Label>
-                <p className="text-[11px] text-muted-foreground">Play an alert chime tone when active.</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Play an alert chime tone when active.
+                </p>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={playAlertSirenSound} title="Test Siren Audio">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={playAlertSirenSound}
+                  title="Test Siren Audio"
+                >
                   <Volume2 className="h-4 w-4 text-primary" />
                 </Button>
                 <Switch checked={soundAlertsEnabled} onCheckedChange={setSoundAlertsEnabled} />
@@ -338,7 +383,8 @@ function SettingsPage() {
             🛡️ Privacy & Zero-Trust Security Guarantees
           </CardTitle>
           <CardDescription className="text-emerald-300/80">
-            HomeWatch is engineered from the ground up to prioritize user privacy and home network security.
+            HomeWatch is engineered from the ground up to prioritize user privacy and home network
+            security.
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-4 space-y-3 text-xs">
@@ -348,7 +394,8 @@ function SettingsPage() {
                 🔒 Zero Inbound Access / No Port Forwarding
               </span>
               <p className="text-muted-foreground text-[11px]">
-                Your home cameras and RTSP passwords stay local to your home network. HomeWatch never requires opening router ports or exposing your home IP.
+                Your home cameras and RTSP passwords stay local to your home network. HomeWatch
+                never requires opening router ports or exposing your home IP.
               </p>
             </div>
 
@@ -357,7 +404,8 @@ function SettingsPage() {
                 🛡️ Enforced Row Level Security (RLS)
               </span>
               <p className="text-muted-foreground text-[11px]">
-                Database security policies isolate your camera data at the database level. No other user can query or view your cameras, map pins, or events.
+                Database security policies isolate your camera data at the database level. No other
+                user can query or view your cameras, map pins, or events.
               </p>
             </div>
 
@@ -366,7 +414,8 @@ function SettingsPage() {
                 🔑 SHA-256 Hashed Device Auth
               </span>
               <p className="text-muted-foreground text-[11px]">
-                Device keys are stored as salted SHA-256 hashes. Raw keys are never stored in plaintext and can be revoked instantly.
+                Device keys are stored as salted SHA-256 hashes. Raw keys are never stored in
+                plaintext and can be revoked instantly.
               </p>
             </div>
 
@@ -375,7 +424,8 @@ function SettingsPage() {
                 ⏱️ Short-Lived Signed Image URLs & Auto-Purge
               </span>
               <p className="text-muted-foreground text-[11px]">
-                Snapshot image URLs expire automatically after 1 hour. Old footage is permanently erased automatically based on your retention policy.
+                Snapshot image URLs expire automatically after 1 hour. Old footage is permanently
+                erased automatically based on your retention policy.
               </p>
             </div>
           </div>
@@ -385,7 +435,9 @@ function SettingsPage() {
       <Card className="bg-card/70">
         <CardHeader>
           <CardTitle className="text-base">Retention & Purge</CardTitle>
-          <CardDescription>Snapshots and events older than this are permanently deleted.</CardDescription>
+          <CardDescription>
+            Snapshots and events older than this are permanently deleted.
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap items-end gap-4">
           <div className="space-y-2">

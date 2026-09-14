@@ -30,7 +30,10 @@ export const Route = createFileRoute("/_authenticated/events")({
           "Search detections with or without a license plate using natural language, state, vehicle make/model, or visual features.",
       },
       { property: "og:title", content: "Vehicle Intelligence & Search — HomeWatch" },
-      { property: "og:description", content: "Flock-style natural language and multi-attribute vehicle search." },
+      {
+        property: "og:description",
+        content: "Flock-style natural language and multi-attribute vehicle search.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -41,12 +44,37 @@ export const Route = createFileRoute("/_authenticated/events")({
 const ALL = "__all__";
 
 const US_STATES = [
-  "CA", "TX", "FL", "NY", "PA", "IL", "OH", "GA", "NC", "MI",
-  "NJ", "VA", "WA", "AZ", "TN", "MA", "IN", "MO", "MD", "CO",
+  "CA",
+  "TX",
+  "FL",
+  "NY",
+  "PA",
+  "IL",
+  "OH",
+  "GA",
+  "NC",
+  "MI",
+  "NJ",
+  "VA",
+  "WA",
+  "AZ",
+  "TN",
+  "MA",
+  "IN",
+  "MO",
+  "MD",
+  "CO",
 ];
 
 const FEATURE_PRESETS = [
-  "roof_rack", "bumper_sticker", "dented_bumper", "window_tint", "custom_wheels", "spare_tire", "tow_hitch", "tool_rack"
+  "roof_rack",
+  "bumper_sticker",
+  "dented_bumper",
+  "window_tint",
+  "custom_wheels",
+  "spare_tire",
+  "tow_hitch",
+  "tool_rack",
 ];
 
 function Events() {
@@ -146,7 +174,8 @@ function Events() {
         <div>
           <h1 className="text-2xl font-semibold">Vehicle Search Intelligence</h1>
           <p className="text-sm text-muted-foreground">
-            Flock "Search Without a Plate" — filter by visual attributes, roof racks, temp tags, state, or natural language.
+            Flock "Search Without a Plate" — filter by visual attributes, roof racks, temp tags,
+            state, or natural language.
           </p>
         </div>
         <Button variant="secondary" onClick={exportCsv} disabled={!events.data?.length}>
@@ -344,7 +373,10 @@ function Events() {
       {/* Detections Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {(events.data ?? []).map((event) => (
-          <Card key={event.id} className="overflow-hidden bg-card/70 border border-border/60 flex flex-col justify-between">
+          <Card
+            key={event.id}
+            className="overflow-hidden bg-card/70 border border-border/60 flex flex-col justify-between"
+          >
             <div>
               {event.imageUrl ? (
                 <div className="relative aspect-video w-full bg-slate-950">
@@ -436,4 +468,3 @@ function Events() {
     </div>
   );
 }
-

@@ -90,8 +90,20 @@ function Cameras() {
   });
 
   const updateCoords = useMutation({
-    mutationFn: (vars: { id: string; latitude: number | null; longitude: number | null; facingDirection: string }) =>
-      update({ data: { id: vars.id, latitude: vars.latitude, longitude: vars.longitude, facingDirection: vars.facingDirection } }),
+    mutationFn: (vars: {
+      id: string;
+      latitude: number | null;
+      longitude: number | null;
+      facingDirection: string;
+    }) =>
+      update({
+        data: {
+          id: vars.id,
+          latitude: vars.latitude,
+          longitude: vars.longitude,
+          facingDirection: vars.facingDirection,
+        },
+      }),
     onSuccess: () => {
       invalidate();
       toast.success("Camera location updated");
@@ -114,7 +126,8 @@ function Cameras() {
         <div>
           <h1 className="text-2xl font-semibold">Cameras & GIS Coordinates</h1>
           <p className="text-sm text-muted-foreground">
-            Register camera streams and configure map coordinates & directional vectors for journey tracking.
+            Register camera streams and configure map coordinates & directional vectors for journey
+            tracking.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => setShowUrlGuide((prev) => !prev)}>
@@ -134,36 +147,58 @@ function Cameras() {
             <div className="grid gap-2 sm:grid-cols-2">
               <div className="p-2 rounded bg-background/80 border border-border/50">
                 <span className="font-bold text-foreground block">Reolink</span>
-                <span className="text-muted-foreground text-[11px] block">RTSP: `rtsp://admin:pass@192.168.1.50:554/h264Preview_01_main`</span>
-                <span className="text-muted-foreground text-[11px] block">HTTP: `http://192.168.1.50/cgi-bin/api.cgi?cmd=Snap&user=admin&password=pass`</span>
+                <span className="text-muted-foreground text-[11px] block">
+                  RTSP: `rtsp://admin:pass@192.168.1.50:554/h264Preview_01_main`
+                </span>
+                <span className="text-muted-foreground text-[11px] block">
+                  HTTP: `http://192.168.1.50/cgi-bin/api.cgi?cmd=Snap&user=admin&password=pass`
+                </span>
               </div>
 
               <div className="p-2 rounded bg-background/80 border border-border/50">
                 <span className="font-bold text-foreground block">Amcrest / Dahua</span>
-                <span className="text-muted-foreground text-[11px] block">RTSP: `rtsp://admin:pass@192.168.1.50:554/cam/realmonitor?channel=1&subtype=0`</span>
-                <span className="text-muted-foreground text-[11px] block">HTTP: `http://192.168.1.50/cgi-bin/snapshot.cgi?loginuse=admin&loginpas=pass`</span>
+                <span className="text-muted-foreground text-[11px] block">
+                  RTSP: `rtsp://admin:pass@192.168.1.50:554/cam/realmonitor?channel=1&subtype=0`
+                </span>
+                <span className="text-muted-foreground text-[11px] block">
+                  HTTP: `http://192.168.1.50/cgi-bin/snapshot.cgi?loginuse=admin&loginpas=pass`
+                </span>
               </div>
 
               <div className="p-2 rounded bg-background/80 border border-border/50">
                 <span className="font-bold text-foreground block">Hikvision</span>
-                <span className="text-muted-foreground text-[11px] block">RTSP: `rtsp://admin:pass@192.168.1.50:554/Streaming/Channels/101`</span>
-                <span className="text-muted-foreground text-[11px] block">HTTP: `http://192.168.1.50/ISAPI/Streaming/channels/101/picture`</span>
+                <span className="text-muted-foreground text-[11px] block">
+                  RTSP: `rtsp://admin:pass@192.168.1.50:554/Streaming/Channels/101`
+                </span>
+                <span className="text-muted-foreground text-[11px] block">
+                  HTTP: `http://192.168.1.50/ISAPI/Streaming/channels/101/picture`
+                </span>
               </div>
 
               <div className="p-2 rounded bg-background/80 border border-border/50">
                 <span className="font-bold text-foreground block">Wyze / Tapo / ESP32-CAM</span>
-                <span className="text-muted-foreground text-[11px] block">Wyze (Docker/Bridge): `rtsp://192.168.1.50:8554/front-porch`</span>
-                <span className="text-muted-foreground text-[11px] block">ESP32-CAM HTTP: `http://192.168.1.50/capture`</span>
+                <span className="text-muted-foreground text-[11px] block">
+                  Wyze (Docker/Bridge): `rtsp://192.168.1.50:8554/front-porch`
+                </span>
+                <span className="text-muted-foreground text-[11px] block">
+                  ESP32-CAM HTTP: `http://192.168.1.50/capture`
+                </span>
               </div>
             </div>
             <div className="mt-3 rounded p-2.5 bg-amber-950/30 border border-amber-500/40 text-[11px] space-y-1 font-sans">
-              <span className="font-bold text-amber-400 block">⚡ Pro-Tip: Motion-Triggered Pushes vs. Polling (Cuts Costs by 95%)</span>
+              <span className="font-bold text-amber-400 block">
+                ⚡ Pro-Tip: Motion-Triggered Pushes vs. Polling (Cuts Costs by 95%)
+              </span>
               <p className="text-amber-200/80">
-                Instead of fetching 1 frame every 10 seconds 24/7, configure your camera's ONVIF/RTSP motion sensor or Home Assistant webhook to push frames <strong>only when a vehicle enters the frame</strong>. This cuts AI API costs by 95% and captures fast-moving vehicles the instant they arrive!
+                Instead of fetching 1 frame every 10 seconds 24/7, configure your camera's
+                ONVIF/RTSP motion sensor or Home Assistant webhook to push frames{" "}
+                <strong>only when a vehicle enters the frame</strong>. This cuts AI API costs by 95%
+                and captures fast-moving vehicles the instant they arrive!
               </p>
             </div>
             <p className="text-[10px] text-muted-foreground pt-1">
-              * Replace `192.168.1.50`, `admin`, and `pass` with your camera's actual local IP address, username, and password.
+              * Replace `192.168.1.50`, `admin`, and `pass` with your camera's actual local IP
+              address, username, and password.
             </p>
           </CardContent>
         </Card>
@@ -176,7 +211,12 @@ function Cameras() {
         <CardContent className="grid gap-4 md:grid-cols-6">
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Front Gate East" />
+            <Input
+              id="name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="e.g. Front Gate East"
+            />
           </div>
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="location">Location description</Label>
@@ -302,9 +342,7 @@ function Cameras() {
                 <Switch
                   id={`enabled-${camera.id}`}
                   checked={camera.enabled}
-                  onCheckedChange={(checked) =>
-                    toggle.mutate({ id: camera.id, enabled: checked })
-                  }
+                  onCheckedChange={(checked) => toggle.mutate({ id: camera.id, enabled: checked })}
                 />
               </div>
               <Button variant="ghost" size="icon" onClick={() => destroy.mutate(camera.id)}>
